@@ -1,0 +1,3515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>IACS UR E27 — Cyber Resilience Tool | RINA</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #F5F6F8;
+    --surface: #FFFFFF;
+    --surface2: #EEF0F4;
+    --border: #DDE1EA;
+    --border2: #C2C8D4;
+    --text: #0A1628;
+    --text2: #3D5068;
+    --text3: #7A8EA8;
+    --blue: #0072CE;
+    --blue-bg: #E5F1FB;
+    --blue-border: #99CCEE;
+    --green: #1A7A4A;
+    --green-bg: #E8F5EE;
+    --green-border: #A8D9BB;
+    --amber: #92610A;
+    --amber-bg: #FDF4E3;
+    --amber-border: #F0D090;
+    --red: #B02020;
+    --red-bg: #FCEAEA;
+    --red-border: #F0AAAA;
+    --exempt: #8A9BB0;
+    --exempt-bg: #F0F2F6;
+    --exempt-border: #D0D6E0;
+    --radius: 8px;
+    --radius-lg: 12px;
+    /* RINA brand */
+    --rina-navy:  #002855;
+    --rina-blue:  #0072CE;
+    --rina-light: #E5F1FB;
+    --rina-gold:  #C8A84B;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) {
+      --bg: #0D1117;
+      --surface: #161B24;
+      --surface2: #1E2533;
+      --border: #262E3D;
+      --border2: #364052;
+      --text: #E8EDF5;
+      --text2: #8A9BB0;
+      --text3: #546070;
+      --blue: #5B9CF0;
+      --blue-bg: #0E1E36;
+      --blue-border: #1C3A6A;
+      --green: #4DC882;
+      --green-bg: #0A1E12;
+      --green-border: #1A4A2A;
+      --amber: #F0B84A;
+      --amber-bg: #1E1408;
+      --amber-border: #4A3010;
+      --red: #F07070;
+      --red-bg: #1E0A0A;
+      --red-border: #4A1A1A;
+      --exempt: #546070;
+      --exempt-bg: #1A1E26;
+      --exempt-border: #262E3D;
+    }
+  }
+
+  [data-theme="dark"] {
+    --bg: #0D1117;
+    --surface: #161B24;
+    --surface2: #1E2533;
+    --border: #262E3D;
+    --border2: #364052;
+    --text: #E8EDF5;
+    --text2: #8A9BB0;
+    --text3: #546070;
+    --blue: #5B9CF0;
+    --blue-bg: #0E1E36;
+    --blue-border: #1C3A6A;
+    --green: #4DC882;
+    --green-bg: #0A1E12;
+    --green-border: #1A4A2A;
+    --amber: #F0B84A;
+    --amber-bg: #1E1408;
+    --amber-border: #4A3010;
+    --red: #F07070;
+    --red-bg: #1E0A0A;
+    --red-border: #4A1A1A;
+    --exempt: #546070;
+    --exempt-bg: #1A1E26;
+    --exempt-border: #262E3D;
+  }
+
+  [data-theme="light"] {
+    --bg: #F7F8FA;
+    --surface: #FFFFFF;
+    --surface2: #F0F2F6;
+    --border: #E2E6ED;
+    --border2: #C8CDD8;
+    --text: #0F1923;
+    --text2: #4A5568;
+    --text3: #8A9BB0;
+    --blue: #1B60C8;
+    --blue-bg: #EBF1FC;
+    --blue-border: #B3CCF5;
+    --green: #1A7A4A;
+    --green-bg: #E8F5EE;
+    --green-border: #A8D9BB;
+    --amber: #92610A;
+    --amber-bg: #FDF4E3;
+    --amber-border: #F0D090;
+    --red: #B02020;
+    --red-bg: #FCEAEA;
+    --red-border: #F0AAAA;
+    --exempt: #8A9BB0;
+    --exempt-bg: #F0F2F6;
+    --exempt-border: #D0D6E0;
+  }
+
+  /* ── Theme toggle ── */
+  .theme-toggle {
+    display: flex;
+    align-items: center;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 3px;
+    gap: 2px;
+  }
+  .theme-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 16px;
+    border: none;
+    background: transparent;
+    color: var(--text3);
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.15s, color 0.15s;
+    line-height: 1;
+  }
+  .theme-btn:hover { color: var(--text2); }
+  .theme-btn.active {
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+  }
+
+  html { font-size: 15px; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  /* ── RINA Top Bar ── */
+  .rina-topbar {
+    background: var(--rina-navy);
+    height: 4px;
+    width: 100%;
+  }
+
+  /* ── Header ── */
+  .header {
+    background: var(--rina-navy);
+    padding: 0 2rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0;
+    box-shadow: 0 2px 12px rgba(0,40,85,.18);
+  }
+  .header-left {
+    display: flex; align-items: center; gap: 16px;
+    padding: 14px 0;
+  }
+
+  /* ── Cyber Symbol Mark ── */
+  .cyber-mark {
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+  .cyber-mark svg { display: block; }
+
+  .header-divider {
+    width: 1px; height: 32px;
+    background: rgba(255,255,255,.2);
+    flex-shrink: 0;
+  }
+
+  .header-badge {
+    background: rgba(255,255,255,.12);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,.25);
+    border-radius: 5px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    padding: 3px 8px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .header-title {
+    font-size: 15px; font-weight: 600;
+    color: #FFFFFF; letter-spacing: .01em;
+  }
+  .header-sub { font-size: 11px; color: rgba(255,255,255,.55); margin-top: 1px; }
+
+  .print-btn {
+    background: rgba(255,255,255,.1);
+    border: 1px solid rgba(255,255,255,.2);
+    border-radius: var(--radius);
+    color: rgba(255,255,255,.85);
+    cursor: pointer;
+    font-size: 12px;
+    padding: 6px 12px;
+    display: flex; align-items: center; gap: 5px;
+    transition: background .15s;
+  }
+  .print-btn:hover { background: rgba(255,255,255,.2); color: #fff; border-color: rgba(255,255,255,.4); }
+
+  /* Theme toggle on dark header */
+  .theme-toggle {
+    display: flex; align-items: center;
+    background: rgba(255,255,255,.1);
+    border: 1px solid rgba(255,255,255,.2);
+    border-radius: 20px; padding: 3px; gap: 2px;
+  }
+  .theme-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; border-radius: 14px;
+    border: none; background: transparent; color: rgba(255,255,255,.6);
+    cursor: pointer; font-size: 13px; transition: background .15s, color .15s; line-height: 1;
+  }
+  .theme-btn:hover { color: rgba(255,255,255,.9); }
+  .theme-btn.active { background: rgba(255,255,255,.2); color: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+
+  /* Header summary – inline numbers on right */
+  .header-summary {
+    display: flex; align-items: center; gap: 4px;
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.15);
+    border-radius: var(--radius); padding: 5px 10px;
+  }
+  .hsumm-item { display: flex; flex-direction: column; align-items: center; min-width: 40px; padding: 0 6px; }
+  .hsumm-item + .hsumm-item { border-left: 1px solid rgba(255,255,255,.15); }
+  .hsumm-num { font-size: 16px; font-weight: 700; line-height: 1.1; color: #fff; }
+  .hsumm-num.s-req { color: #7CC3FF; }
+  .hsumm-num.s-add { color: #6DDBA8; }
+  .hsumm-num.s-ex  { color: rgba(255,255,255,.45); }
+  .hsumm-lbl { font-size: 9px; color: rgba(255,255,255,.45); white-space: nowrap; margin-top: 1px; }
+  .hsumm-progress { display: flex; flex-direction: column; gap: 3px; min-width: 80px; padding: 0 8px; border-left: 1px solid rgba(255,255,255,.15); }
+  .hsumm-pct { font-size: 10px; color: rgba(255,255,255,.5); text-align: right; }
+  .hsumm-bar { height: 4px; background: rgba(255,255,255,.15); border-radius: 2px; overflow: hidden; }
+  .hsumm-fill { height: 100%; border-radius: 2px; background: var(--rina-blue); transition: width .3s; }
+  @media (max-width: 760px) { .header-summary { display: none; } }
+
+  /* ── Layout ── */
+  .layout {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 1.5rem;
+    align-items: start;
+  }
+  @media (max-width: 760px) {
+    .layout { grid-template-columns: 1fr; padding: 1rem; }
+    .header { padding: 1rem; }
+  }
+
+  /* ── Sidebar ── */
+  .sidebar { position: sticky; top: 73px; }
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin-bottom: 1rem;
+  }
+  .panel-head {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--text3);
+  }
+  .panel-body { padding: 12px; }
+
+  /* Condition toggles */
+  .cond-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 10px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: background 0.12s;
+    margin-bottom: 4px;
+  }
+  .cond-item:last-child { margin-bottom: 0; }
+  .cond-item:hover { background: var(--surface2); }
+  .cond-item.active { background: var(--blue-bg); }
+  .cond-item input[type=checkbox] {
+    margin-top: 3px;
+    flex-shrink: 0;
+    width: 16px; height: 16px;
+    accent-color: var(--blue);
+    cursor: pointer;
+  }
+  .cond-text { flex: 1; }
+  .cond-name { font-size: 13px; font-weight: 500; color: var(--text); line-height: 1.4; }
+  .cond-desc { font-size: 12px; color: var(--text3); margin-top: 2px; }
+  .cond-item.active .cond-name { color: var(--blue); }
+
+  /* Stats — sidebar version kept, header version added */
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .stat-cell {
+    background: var(--surface2);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+    text-align: center;
+  }
+  .stat-num { font-size: 22px; font-weight: 700; line-height: 1.1; color: var(--text); }
+  .stat-lbl { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .stat-cell.s-req .stat-num { color: var(--blue); }
+  .stat-cell.s-add .stat-num { color: var(--green); }
+  .stat-cell.s-ex .stat-num { color: var(--exempt); }
+
+  /* Header summary bar */
+  .header-summary {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 6px 12px;
+  }
+  .hsumm-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 44px;
+    padding: 0 8px;
+  }
+  .hsumm-item + .hsumm-item {
+    border-left: 1px solid var(--border);
+  }
+  .hsumm-num {
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--text);
+  }
+  .hsumm-num.s-req { color: var(--blue); }
+  .hsumm-num.s-add { color: var(--green); }
+  .hsumm-num.s-ex  { color: var(--exempt); }
+  .hsumm-lbl {
+    font-size: 10px;
+    color: var(--text3);
+    white-space: nowrap;
+    margin-top: 1px;
+  }
+  .hsumm-divider { width: 1px; height: 28px; background: var(--border); flex-shrink: 0; }
+  .hsumm-progress {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 90px;
+    padding: 0 8px;
+    border-left: 1px solid var(--border);
+  }
+  .hsumm-pct { font-size: 11px; color: var(--text3); text-align: right; }
+  .hsumm-bar { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .hsumm-fill { height: 100%; border-radius: 3px; background: var(--blue); transition: width 0.3s; }
+  @media (max-width: 760px) { .header-summary { display: none; } }
+
+  /* Progress bar */
+  .progress-wrap { margin-top: 10px; }
+  .progress-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--text3); margin-bottom: 5px; }
+  .progress-bar { height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 3px; background: var(--blue); transition: width 0.3s; }
+
+  /* ── Main content ── */
+  .main { min-width: 0; }
+  .section-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin-bottom: 1.25rem;
+  }
+  .section-head {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .section-head-left { display: flex; align-items: center; gap: 10px; }
+  .section-tag {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 5px;
+    border: 1px solid;
+  }
+  .tag-req { background: var(--blue-bg); color: var(--blue); border-color: var(--blue-border); }
+  .tag-add { background: var(--green-bg); color: var(--green); border-color: var(--green-border); }
+  .tag-excl { background: var(--exempt-bg); color: var(--exempt); border-color: var(--exempt-border); }
+  .section-title-text { font-size: 14px; font-weight: 600; color: var(--text); }
+  .section-count { font-size: 12px; color: var(--text3); }
+
+  /* Capability rows */
+  .cap-list { }
+  .cap-row {
+    display: grid;
+    grid-template-columns: 44px 1fr auto;
+    align-items: center;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+  }
+  .cap-row:last-child { border-bottom: none; }
+  .cap-row:not(.exempted):hover { background: var(--bg); }
+  .cap-num {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text3);
+    border-right: 1px solid var(--border);
+    align-self: stretch;
+  }
+  .cap-row.required .cap-num { color: var(--blue); }
+  .cap-row.additional .cap-num { color: var(--green); }
+  .cap-row.exempted .cap-num { color: var(--exempt-border); }
+  .cap-body {
+    padding: 12px 16px;
+    min-width: 0;
+  }
+  .cap-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+  .cap-desc {
+    font-size: 12px;
+    color: var(--text2);
+    line-height: 1.5;
+  }
+  .cap-ref {
+    font-size: 11px;
+    color: var(--text3);
+    font-family: "SF Mono", "Fira Code", monospace;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 6px;
+    white-space: nowrap;
+  }
+  .cap-status {
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+  }
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .dot-req { background: var(--blue); }
+  .dot-add { background: var(--green); }
+  .dot-ex { background: var(--exempt); opacity: 0.5; }
+
+  /* Exempted row style */
+  .cap-row.exempted {
+    opacity: 0.45;
+  }
+  .cap-row.exempted .cap-name {
+    text-decoration: line-through;
+    color: var(--text3);
+  }
+  .cap-row.exempted .cap-desc { color: var(--text3); }
+  .exempt-reason {
+    font-size: 11px;
+    color: var(--amber);
+    background: var(--amber-bg);
+    border: 1px solid var(--amber-border);
+    border-radius: 4px;
+    padding: 2px 7px;
+    white-space: nowrap;
+    margin-left: 8px;
+  }
+  .cap-row.exempted .cap-ref { opacity: 0.5; }
+
+  /* Excluded section notice */
+  .excluded-notice {
+    padding: 20px;
+    text-align: center;
+    color: var(--text3);
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .excl-icon { font-size: 18px; }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    padding: 12px 20px;
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text2);
+  }
+  .leg-item { display: flex; align-items: center; gap: 6px; }
+  .leg-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  @media print {
+    .header { position: static; }
+    .layout { grid-template-columns: 1fr; }
+    .sidebar { position: static; }
+    .print-btn { display: none; }
+    .nav-tabs  { display: none; }
+    body { background: white; }
+    .cap-row.exempted { display: none; }
+  }
+
+  /* ── Nav tabs ── */
+  .nav-tabs {
+    background: var(--rina-navy);
+    border-bottom: 1px solid rgba(255,255,255,.1);
+    display: flex; padding: 0 2rem; gap: 2px;
+  }
+  .nav-tab {
+    padding: 9px 18px; font-size: 13px; font-weight: 500;
+    color: rgba(255,255,255,.55); background: none; border: none;
+    border-bottom: 3px solid transparent; margin-bottom: -1px;
+    cursor: pointer; transition: color .15s, border-color .15s; white-space: nowrap;
+  }
+  .nav-tab:hover { color: rgba(255,255,255,.85); }
+  .nav-tab.active { color: #fff; border-bottom-color: var(--rina-gold); }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ── Risk layout ── */
+  .risk-layout {
+    max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem;
+    display: grid; grid-template-columns: 380px 1fr; gap: 1.5rem; align-items: start;
+  }
+  @media (max-width: 800px) { .risk-layout { grid-template-columns: 1fr; padding: 1rem; } }
+
+  .rpanel {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 1rem;
+  }
+  .rpanel-head {
+    padding: 10px 16px; border-bottom: 1px solid var(--border);
+    font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--text3);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .rpanel-body { padding: 12px 14px; }
+
+  .rform-group { margin-bottom: 12px; }
+  .rform-group:last-child { margin-bottom: 0; }
+  .rform-label { font-size: 12px; font-weight: 500; color: var(--text2); margin-bottom: 5px; display: flex; align-items: center; gap: 5px; }
+  .rform-hint  { font-size: 11px; color: var(--text3); }
+
+  .seg-group { display: flex; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); }
+  .seg-btn {
+    flex: 1; padding: 6px 4px; font-size: 11px; font-weight: 500; text-align: center;
+    cursor: pointer; background: var(--surface2); color: var(--text3);
+    border: none; border-right: 1px solid var(--border); transition: background .12s, color .12s;
+    line-height: 1.3;
+  }
+  .seg-btn:last-child { border-right: none; }
+  .seg-btn:hover { background: var(--bg); color: var(--text2); }
+  .seg-btn.active { background: var(--blue); color: #fff; }
+  .seg-btn.active-amber { background: var(--amber); color: #fff; }
+  .seg-btn.active-green { background: var(--green); color: #fff; }
+
+  .sys-input {
+    width: 100%; padding: 7px 10px; font-size: 13px; color: var(--text);
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius); outline: none; font-family: inherit;
+  }
+  .sys-input:focus { border-color: var(--blue-border); background: var(--surface); }
+
+  /* Result area */
+  .rresult {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 1rem;
+  }
+  .rresult-head {
+    padding: 13px 20px; border-bottom: 1px solid var(--border);
+    font-size: 13px; font-weight: 600; color: var(--text);
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px;
+  }
+  /* RL gauge */
+  .rl-gauge-wrap { padding: 20px 24px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+  .rl-circle {
+    width: 110px; height: 110px; border-radius: 50%; flex-shrink: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    border: 4px solid; transition: all .3s;
+  }
+  .rl-circle .rl-num { font-size: 36px; font-weight: 700; line-height: 1; }
+  .rl-circle .rl-lbl { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; margin-top: 2px; }
+  .rl-c1 { border-color: var(--green);  background: var(--green-bg);  color: var(--green); }
+  .rl-c2 { border-color: var(--amber);  background: var(--amber-bg);  color: var(--amber); }
+  .rl-c3 { border-color: #C05000; background: #FDF0E8; color: #C05000; }
+  .rl-c4 { border-color: var(--red);    background: var(--red-bg);    color: var(--red); }
+  [data-theme="dark"] .rl-c3 { background: #2A1800; color: #F08030; border-color: #F08030; }
+
+  .rl-detail { flex: 1; min-width: 200px; }
+  .rl-formula {
+    font-size: 13px; color: var(--text2); padding: 10px 14px;
+    background: var(--surface2); border-radius: var(--radius); margin-bottom: 10px;
+    font-family: "SF Mono","Fira Code",monospace; letter-spacing: .02em;
+  }
+  .rl-formula span { color: var(--blue); font-weight: 600; }
+  .rl-treatment {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600;
+    border: 1px solid;
+  }
+  .rlt-opt  { background: var(--green-bg);  color: var(--green);  border-color: var(--green-border); }
+  .rlt-app  { background: var(--amber-bg);  color: var(--amber);  border-color: var(--amber-border); }
+  .rlt-req  { background: var(--red-bg);    color: var(--red);    border-color: var(--red-border); }
+
+  /* Component breakdown */
+  .rl-breakdown { display: grid; grid-template-columns: repeat(3,1fr); gap: 1px; background: var(--border); border-top: 1px solid var(--border); }
+  .rlb-cell { background: var(--surface); padding: 12px 14px; text-align: center; }
+  .rlb-val  { font-size: 20px; font-weight: 700; color: var(--text); }
+  .rlb-lbl  { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+  /* Likelihood chain */
+  .lk-chain { padding: 16px 20px; border-top: 1px solid var(--border); }
+  .lk-steps { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .lk-step {
+    padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 500;
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text2);
+  }
+  .lk-step.active { background: var(--blue-bg); border-color: var(--blue-border); color: var(--blue); }
+  .lk-arrow { color: var(--text3); font-size: 14px; }
+  .lk-final { font-weight: 700; font-size: 14px; }
+
+  /* Mitigation panel */
+  .mit-list { display: flex; flex-direction: column; gap: 6px; }
+  .mit-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 12px; border-radius: var(--radius);
+    border: 1px solid var(--border); background: var(--surface2);
+    cursor: pointer; transition: border-color .12s, background .12s;
+  }
+  .mit-item:hover { border-color: var(--border2); }
+  .mit-item.selected { border-color: var(--blue-border); background: var(--blue-bg); }
+  .mit-item input[type=checkbox] { margin-top: 2px; flex-shrink: 0; accent-color: var(--blue); }
+  .mit-text .mit-name { font-size: 13px; font-weight: 500; color: var(--text); }
+  .mit-text .mit-desc { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .mit-reduce { margin-left: auto; font-size: 12px; font-weight: 600; color: var(--green); white-space: nowrap; }
+  .mit-item.selected .mit-name { color: var(--blue); }
+
+  .rrl-box {
+    margin: 0 16px 14px; padding: 12px 14px;
+    border-radius: var(--radius); border: 1px solid;
+    font-size: 13px; line-height: 1.6;
+  }
+  .rrl-opt  { background: var(--green-bg); border-color: var(--green-border); color: var(--green); }
+  .rrl-app  { background: var(--amber-bg); border-color: var(--amber-border); color: var(--amber); }
+  .rrl-req  { background: var(--red-bg);   border-color: var(--red-border);   color: var(--red); }
+  .rrl-box strong { font-weight: 700; }
+
+  /* Saved list */
+  .saved-list { display: flex; flex-direction: column; gap: 8px; }
+  .saved-card {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 12px 14px; transition: border-color .12s;
+  }
+  .saved-card:hover { border-color: var(--border2); }
+  .saved-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; flex-wrap: wrap; gap: 4px; }
+  .saved-name { font-size: 13px; font-weight: 500; color: var(--text); }
+  .saved-meta { font-size: 11px; color: var(--text3); line-height: 1.6; }
+  .rl-badge {
+    font-size: 11px; font-weight: 700; padding: 2px 10px;
+    border-radius: 4px; border: 1px solid; white-space: nowrap;
+  }
+  .rlb-opt  { background: var(--green-bg); color: var(--green); border-color: var(--green-border); }
+  .rlb-app  { background: var(--amber-bg); color: var(--amber); border-color: var(--amber-border); }
+  .rlb-req  { background: var(--red-bg);   color: var(--red);   border-color: var(--red-border); }
+
+  /* ── Capability Status Dashboard ── */
+  .status-dashboard {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin-bottom: 1.25rem;
+  }
+  .status-dashboard-head {
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+  }
+  .status-dashboard-title { font-size: 13px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 8px; }
+  .status-dashboard-body  { display: grid; grid-template-columns: 210px 1fr; gap: 0; }
+  @media (max-width: 680px) { .status-dashboard-body { grid-template-columns: 1fr; } }
+
+  .status-pie-wrap {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 20px 16px; border-right: 1px solid var(--border);
+    gap: 14px; min-height: 200px;
+  }
+  @media (max-width: 680px) { .status-pie-wrap { border-right: none; border-bottom: 1px solid var(--border); } }
+  .pie-container { position: relative; width: 148px; height: 148px; flex-shrink: 0; }
+  .pie-center-text {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    text-align: center; pointer-events: none;
+  }
+  .pie-center-total { font-size: 28px; font-weight: 700; color: var(--text); line-height: 1; }
+  .pie-center-lbl   { font-size: 10px; color: var(--text3); margin-top: 3px; text-transform: uppercase; letter-spacing: .05em; }
+  .pie-legend { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+  .pie-leg-item { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--text2); }
+  .pie-leg-dot { width: 11px; height: 11px; border-radius: 3px; flex-shrink: 0; }
+
+  .status-stats-wrap {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(115px, 1fr));
+    gap: 1px; background: var(--border); align-content: start;
+  }
+  .stat-card {
+    background: var(--surface); padding: 18px 18px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .stat-card-num { font-size: 32px; font-weight: 700; line-height: 1; color: var(--text); }
+  .stat-card-lbl { font-size: 11px; color: var(--text3); line-height: 1.4; margin-top: 2px; }
+  .stat-card-bar { height: 3px; border-radius: 2px; margin-top: 8px; transition: width .4s ease; }
+  .stat-card.sc-req .stat-card-num { color: var(--blue); }
+  .stat-card.sc-add .stat-card-num { color: var(--green); }
+  .stat-card.sc-ex  .stat-card-num { color: var(--exempt); }
+  .stat-card.sc-req .stat-card-bar { background: var(--blue); }
+  .stat-card.sc-add .stat-card-bar { background: var(--green); }
+  .stat-card.sc-ex  .stat-card-bar { background: var(--exempt); }
+  .stat-card.sc-total .stat-card-bar { background: var(--border2); }
+
+  /* ── CBS Exclusion Checklist ── */
+  .excl-section { padding: 14px 20px; border-top: 1px solid var(--border); }
+  .excl-section-title {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .07em; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .excl-pill {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-size: 10px; font-weight: 700; letter-spacing: .04em; border: 1px solid;
+  }
+  .excl-pill-mand { background: var(--red-bg);   color: var(--red);   border-color: var(--red-border); }
+  .excl-pill-add  { background: var(--amber-bg); color: var(--amber); border-color: var(--amber-border); }
+  .excl-pill-ok   { background: var(--green-bg); color: var(--green); border-color: var(--green-border); }
+
+  .excl-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 9px 10px; border-radius: var(--radius);
+    border: 1px solid var(--border); background: var(--surface2);
+    margin-bottom: 6px; cursor: pointer; transition: border-color .12s, background .12s;
+  }
+  .excl-item:last-child { margin-bottom: 0; }
+  .excl-item:hover { border-color: var(--border2); }
+  .excl-item.excl-checked-mand { border-color: var(--green-border); background: var(--green-bg); }
+  .excl-item.excl-checked-add  { border-color: var(--amber-border); background: var(--amber-bg); }
+  .excl-item input[type=checkbox] { margin-top: 2px; flex-shrink: 0; width: 15px; height: 15px; cursor: pointer; }
+  .excl-item input[type=checkbox].mand { accent-color: var(--green); }
+  .excl-item input[type=checkbox].add  { accent-color: var(--amber); }
+  .excl-item-lbl { font-size: 12px; font-weight: 500; color: var(--text3); flex-shrink: 0; min-width: 18px; }
+  .excl-item-text { font-size: 12px; color: var(--text2); line-height: 1.55; flex: 1; }
+  .excl-item.excl-checked-mand .excl-item-text { color: var(--green); }
+  .excl-item.excl-checked-add  .excl-item-text { color: var(--amber); }
+
+  .excl-verdict {
+    margin: 12px 0 0; padding: 11px 14px; border-radius: var(--radius);
+    font-size: 12px; font-weight: 500; line-height: 1.6; border: 1px solid;
+    display: flex; align-items: flex-start; gap: 8px;
+  }
+  .excl-verdict-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .ev-none    { background: var(--surface2); color: var(--text3); border-color: var(--border); }
+  .ev-partial { background: var(--amber-bg); color: var(--amber); border-color: var(--amber-border); }
+  .ev-mand-ok { background: var(--blue-bg);  color: var(--blue);  border-color: var(--blue-border); }
+  .ev-full    { background: var(--green-bg); color: var(--green); border-color: var(--green-border); }
+  .ev-fail    { background: var(--red-bg);   color: var(--red);   border-color: var(--red-border); }
+
+  /* ══════════════════════════════════════════════════
+     MOBILE RESPONSIVE  (≤ 600px)
+     ══════════════════════════════════════════════════ */
+  @media (max-width: 600px) {
+
+    /* ── Base ── */
+    html { font-size: 14px; }
+    body { overflow-x: hidden; }
+
+    /* ── Header ── */
+    .header {
+      padding: 0 12px;
+      flex-wrap: wrap;
+      gap: 0;
+    }
+    .header-left { gap: 8px; padding: 10px 0; flex-wrap: wrap; }
+    .header-title { font-size: 13px; }
+    .header-sub   { font-size: 10px; display: none; }
+    .header-divider { display: none; }
+    .print-btn    { font-size: 11px; padding: 5px 9px; }
+    .print-btn span { display: none; }
+    .cyber-mark svg { width: 28px; height: 32px; }
+
+    /* ── Nav tabs ── */
+    .nav-tabs {
+      padding: 0 8px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      flex-wrap: nowrap;
+      gap: 0;
+    }
+    .nav-tabs::-webkit-scrollbar { display: none; }
+    .nav-tab { padding: 8px 12px; font-size: 11px; white-space: nowrap; flex-shrink: 0; }
+
+    /* ── Disclaimer banner ── */
+    .disclaimer-banner { padding: 8px 12px; flex-direction: column; gap: 6px; }
+    .disclaimer-banner .disc-body { font-size: 11px; }
+    .disclaimer-banner .disc-close { align-self: flex-end; }
+
+    /* ── Checklist layout (sidebar → top) ── */
+    .layout {
+      grid-template-columns: 1fr;
+      padding: 0.75rem;
+      gap: 0.75rem;
+    }
+    .sidebar { position: static; }
+    .panel { margin-bottom: 0.5rem; }
+    .panel-head { font-size: 10px; padding: 8px 12px; }
+    .panel-body { padding: 8px; }
+
+    /* Condition items */
+    .cond-item { padding: 8px; gap: 8px; }
+    .cond-name { font-size: 12px; }
+    .cond-desc { font-size: 10px; }
+
+    /* ── Status dashboard ── */
+    .status-dashboard-body { grid-template-columns: 1fr; }
+    .status-pie-wrap {
+      border-right: none;
+      border-bottom: 1px solid var(--border);
+      flex-direction: row;
+      gap: 16px;
+      padding: 14px;
+      justify-content: flex-start;
+    }
+    .pie-container { width: 110px; height: 110px; flex-shrink: 0; }
+    .pie-center-total { font-size: 22px; }
+    .status-stats-wrap { grid-template-columns: repeat(2, 1fr); }
+    .stat-card { padding: 12px; }
+    .stat-card-num { font-size: 24px; }
+
+    /* Capability rows */
+    .cap-row { grid-template-columns: 36px 1fr; }
+    .cap-status { display: none; }
+    .cap-num { font-size: 12px; }
+    .cap-name { font-size: 12px; }
+    .cap-desc { font-size: 11px; }
+    .exempt-reason { font-size: 10px; }
+
+    .section-head { flex-direction: column; align-items: flex-start; gap: 4px; padding: 10px 12px; }
+    .section-tag  { font-size: 9px; padding: 2px 6px; }
+    .section-count { font-size: 11px; }
+    .legend { padding: 8px 12px; gap: 10px; flex-wrap: wrap; }
+
+    /* ── Risk Calculator ── */
+    .risk-layout { grid-template-columns: 1fr; padding: 0.75rem; gap: 0.75rem; }
+    .rpanel-head { padding: 8px 12px; font-size: 10px; }
+    .rpanel-body { padding: 10px; }
+    .rform-label { font-size: 11px; }
+    .seg-group { flex-direction: column; }
+    .seg-btn { border-right: none !important; border-bottom: 1px solid var(--border); font-size: 11px; padding: 7px 10px; }
+    .seg-btn:last-child { border-bottom: none; }
+    .rl-gauge-wrap { flex-direction: column; align-items: center; gap: 10px; padding: 16px; }
+    .score-circle { width: 80px; height: 80px; }
+    .score-circle .sc-num { font-size: 22px; }
+    .rl-circle { width: 88px; height: 88px; }
+    .rl-circle .rl-num { font-size: 28px; }
+    .rl-breakdown { grid-template-columns: repeat(3, 1fr); }
+    .rlb-val { font-size: 15px; }
+    .rl-detail { min-width: 0; width: 100%; }
+    .rl-formula { font-size: 11px; padding: 8px 10px; }
+    .lk-chain { padding: 10px 12px; }
+    .lk-steps { gap: 4px; }
+    .lk-step { font-size: 10px; padding: 3px 6px; }
+    .lk-arrow { font-size: 11px; }
+    .mit-list { gap: 5px; }
+    .mit-item { padding: 8px 10px; gap: 7px; }
+    .mit-text .mit-name { font-size: 12px; }
+    .mit-text .mit-desc { font-size: 10px; }
+    .mit-reduce { font-size: 11px; }
+    .rrl-box { margin: 0 10px 10px; font-size: 11px; padding: 10px; }
+    .rresult-head { padding: 10px 12px; font-size: 12px; }
+    .matrix-wrap { padding: 10px 12px; }
+    .matrix-grid { grid-template-columns: 54px repeat(4, 1fr); gap: 2px; }
+    .mx-cell { padding: 5px 2px; font-size: 9px; }
+    .mx-head { font-size: 9px; }
+    .sl-result { padding: 10px 12px; }
+    .sl-bars { gap: 5px; }
+    .sl-bar-label { font-size: 11px; min-width: 28px; }
+    .sl-bar-val { font-size: 10px; }
+    .rec-box { margin: 0 10px 10px; padding: 10px; font-size: 11px; }
+
+    /* Exclusion checklist */
+    .excl-section { padding: 10px 12px; }
+    .excl-section-title { font-size: 10px; flex-wrap: wrap; }
+    .excl-item { padding: 8px; gap: 7px; }
+    .excl-item-text { font-size: 11px; }
+    .excl-verdict { padding: 9px 11px; font-size: 11px; }
+    .excl-verdict-icon { font-size: 13px; }
+
+    /* Saved assessments */
+    .saved-card { padding: 10px; }
+    .saved-name { font-size: 12px; }
+    .saved-meta { font-size: 10px; }
+    .rl-badge { font-size: 10px; padding: 2px 6px; }
+    .risk-action-btn { font-size: 12px; padding: 8px; }
+
+    /* ── Asset Inventory ── */
+    .ai-layout { padding: 0.75rem; }
+    .vessel-card { grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px; }
+    .vessel-field label { font-size: 10px; }
+    .vessel-field input { font-size: 12px; padding: 5px 8px; }
+    .ai-toolbar { gap: 5px; }
+    .ai-btn { font-size: 11px; padding: 5px 9px; }
+    .ai-search { font-size: 12px; padding: 5px 8px; min-width: 120px; }
+    .ai-count { font-size: 11px; }
+    /* Table scrolls horizontally - already handled by ai-scroll */
+    .ai-table { font-size: 11px; }
+    .ai-table th { font-size: 9px; padding: 5px 6px; }
+    .ai-table td { padding: 5px 6px; }
+    .ai-cell-input { font-size: 11px; }
+    .ai-cell-select { font-size: 11px; }
+    .ai-legend { font-size: 10px; padding: 8px 10px; gap: 8px; }
+
+    /* ── Document Checklist ── */
+    .doc-layout { padding: 0.75rem; }
+    .doc-phase-bar { padding: 10px; gap: 8px; flex-direction: column; }
+    .doc-phase-label { font-size: 10px; }
+    .doc-phase-btn { font-size: 11px; padding: 4px 9px; }
+    .doc-phase-divider { display: none; }
+    .doc-progress-card { padding: 12px; }
+    .doc-prog-title { font-size: 12px; }
+    .doc-prog-counts { font-size: 11px; }
+    .doc-prog-pct { font-size: 22px; }
+    .doc-item-header {
+      grid-template-columns: 36px 1fr;
+    }
+    .doc-phases-col { display: none; } /* Phase grid hidden on mobile — too wide */
+    .doc-info { padding: 10px 12px; }
+    .doc-name { font-size: 12px; }
+    .doc-ref  { font-size: 10px; }
+    .doc-sub  { font-size: 10px; }
+    .doc-status-badge { font-size: 9px; padding: 1px 6px; }
+    .doc-note-row { padding: 6px 10px 10px 46px; }
+    .doc-note-input { font-size: 11px; }
+
+    /* E27 doc list requirements */
+    .doc-phase-cell { font-size: 9px; padding: 2px 3px; }
+    .doc-phase-hdr  { font-size: 8px; }
+
+    /* ── Footer ── */
+    .rina-footer {
+      padding: 12px;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 10px;
+    }
+    .rina-footer > div:first-child { flex-direction: column; gap: 4px; }
+    .rina-footer > span:last-child { text-align: left; font-size: 10px; }
+  }
+
+  /* ── Tablet (601px – 900px) ── */
+  @media (min-width: 601px) and (max-width: 900px) {
+
+    .layout { grid-template-columns: 240px 1fr; padding: 1rem; gap: 1rem; }
+    .cond-name { font-size: 12px; }
+    .cond-desc { font-size: 11px; }
+
+    .risk-layout { grid-template-columns: 300px 1fr; padding: 1rem; gap: 1rem; }
+
+    .nav-tabs { padding: 0 1rem; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .nav-tab  { font-size: 12px; padding: 8px 13px; white-space: nowrap; flex-shrink: 0; }
+
+    .doc-phases-col { min-width: 200px; }
+    .doc-phases-grid { grid-template-columns: repeat(7, 1fr); font-size: 9px; }
+    .doc-phase-cell  { font-size: 9px; padding: 3px 2px; }
+
+    .rl-gauge-wrap { gap: 14px; padding: 18px; }
+    .score-circle { width: 86px; height: 86px; }
+    .score-circle .sc-num { font-size: 24px; }
+    .rl-circle { width: 96px; height: 96px; }
+
+    .ai-layout { padding: 1rem; }
+    .vessel-card { grid-template-columns: repeat(3, 1fr); }
+
+    .seg-group { flex-direction: column; }
+    .seg-btn { border-right: none !important; border-bottom: 1px solid var(--border); }
+    .seg-btn:last-child { border-bottom: none; }
+
+    .status-stats-wrap { grid-template-columns: repeat(4, 1fr); }
+  }
+
+  /* ── Mobile: show phase info differently ── */
+  @media (max-width: 600px) {
+    /* Show a compact "phases summary" line instead of full grid */
+    .doc-phases-mobile {
+      display: flex; flex-wrap: wrap; gap: 3px; margin-top: 5px;
+    }
+    .doc-phases-mobile-badge {
+      font-size: 9px; font-weight: 600; padding: 1px 5px;
+      border-radius: 3px; border: 1px solid; white-space: nowrap;
+    }
+  }
+  @media (min-width: 601px) {
+    .doc-phases-mobile { display: none; }
+  }
+  .doc-layout { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+  @media (max-width: 760px) { .doc-layout { padding: 1rem; } }
+
+  /* Phase selector */
+  .doc-phase-bar {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 16px 20px; margin-bottom: 1rem;
+    display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start;
+  }
+  .doc-phase-section { display: flex; flex-direction: column; gap: 6px; }
+  .doc-phase-label { font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .06em; color: var(--text3); }
+  .doc-phase-btns { display: flex; flex-wrap: wrap; gap: 5px; }
+  .doc-phase-btn {
+    padding: 5px 12px; font-size: 12px; font-weight: 500;
+    border-radius: 20px; border: 1.5px solid var(--border);
+    background: var(--surface2); color: var(--text2); cursor: pointer;
+    transition: all .12s;
+  }
+  .doc-phase-btn:hover { border-color: var(--border2); color: var(--text); }
+  .doc-phase-btn.active { background: var(--rina-navy); color: #fff; border-color: var(--rina-navy); }
+  .doc-role-btn.active  { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .doc-phase-divider { width: 1px; background: var(--border); align-self: stretch; margin: 0 4px; }
+
+  /* Overall progress */
+  .doc-progress-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 16px 20px; margin-bottom: 1rem;
+    display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center;
+  }
+  .doc-prog-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+  .doc-prog-bar-wrap { height: 10px; background: var(--surface2); border-radius: 5px; overflow: hidden; }
+  .doc-prog-bar-fill { height: 100%; border-radius: 5px; background: var(--blue); transition: width .4s ease; }
+  .doc-prog-pct { font-size: 28px; font-weight: 700; color: var(--blue); text-align: center; }
+  .doc-prog-pct-lbl { font-size: 10px; color: var(--text3); text-align: center; }
+  .doc-prog-counts { font-size: 12px; color: var(--text3); margin-top: 4px; }
+  .doc-prog-counts span { font-weight: 600; color: var(--text2); }
+
+  /* Document list */
+  .doc-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .doc-item {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); overflow: hidden;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .doc-item:hover { border-color: var(--border2); box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+  .doc-item.checked { border-color: var(--green-border); }
+  .doc-item.not-required { opacity: .45; }
+
+  .doc-item-header {
+    display: grid;
+    grid-template-columns: 44px 1fr auto;
+    align-items: center;
+    gap: 0;
+  }
+
+  .doc-check-col {
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px 0; align-self: stretch;
+    border-right: 1px solid var(--border); background: var(--surface2);
+    cursor: pointer; transition: background .12s;
+  }
+  .doc-check-col:hover { background: var(--green-bg); }
+  .doc-check-col input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--green); cursor: pointer; }
+  .doc-item.checked .doc-check-col { background: var(--green-bg); }
+
+  .doc-info { padding: 12px 16px; min-width: 0; }
+  .doc-name { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
+  .doc-ref  { font-size: 11px; color: var(--text3); font-family: "SF Mono","Fira Code",monospace; }
+  .doc-sub  { font-size: 11px; color: var(--text2); margin-top: 4px; line-height: 1.5; }
+
+  .doc-phases-col { padding: 12px 16px; display: flex; flex-direction: column; gap: 4px; min-width: 340px; }
+  @media (max-width: 900px) { .doc-phases-col { min-width: 220px; } }
+  .doc-phases-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px;
+    font-size: 10px;
+  }
+  .doc-phase-hdr { font-size: 9px; font-weight: 600; color: var(--text3); text-align: center;
+    text-transform: uppercase; letter-spacing: .04em; padding: 2px 0; }
+  .doc-phase-cell {
+    padding: 3px 4px; border-radius: 4px; text-align: center;
+    font-size: 10px; font-weight: 500; white-space: nowrap;
+  }
+  .dpc-submit   { background: var(--blue-bg);   color: var(--blue);  border: 1px solid var(--blue-border); }
+  .dpc-maintain { background: var(--amber-bg);  color: var(--amber); border: 1px solid var(--amber-border); }
+  .dpc-demo     { background: var(--green-bg);  color: var(--green); border: 1px solid var(--green-border); }
+  .dpc-empty    { background: var(--surface2);  color: var(--text3); border: 1px solid var(--border); }
+  .dpc-active   { outline: 2px solid var(--blue); outline-offset: 1px; z-index: 1; position: relative; }
+
+  /* Progress bar per item */
+  .doc-item-progress { height: 3px; background: var(--border); }
+  .doc-item-prog-fill { height: 100%; background: var(--green); transition: width .3s; }
+
+  /* Status badge */
+  .doc-status-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 10px; font-weight: 600; padding: 2px 8px;
+    border-radius: 4px; border: 1px solid; white-space: nowrap;
+  }
+  .dsb-done     { background: var(--green-bg); color: var(--green); border-color: var(--green-border); }
+  .dsb-pending  { background: var(--amber-bg); color: var(--amber); border-color: var(--amber-border); }
+  .dsb-na       { background: var(--surface2); color: var(--text3); border-color: var(--border); }
+  .dsb-required { background: var(--red-bg);   color: var(--red);   border-color: var(--red-border); }
+
+  /* Notes area */
+  .doc-note-row { padding: 8px 16px 12px 60px; border-top: 1px solid var(--border); background: var(--bg); }
+  .doc-note-input {
+    width: 100%; padding: 6px 10px; font-size: 12px; color: var(--text);
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); outline: none; font-family: inherit; resize: none;
+  }
+  .doc-note-input:focus { border-color: var(--blue-border); }
+
+  .doc-empty-state { text-align: center; padding: 48px 20px; color: var(--text3); font-size: 14px; }
+  .doc-empty-icon { font-size: 36px; margin-bottom: 10px; }
+
+  /* ══ Asset Inventory ══ */
+  .ai-layout { max-width: 1300px; margin: 0 auto; padding: 1.5rem; }
+
+  /* Vessel header card */
+  .vessel-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 16px 20px; margin-bottom: 1rem;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px;
+  }
+  .vessel-field label { font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .06em; color: var(--text3); display: block; margin-bottom: 4px; }
+  .vessel-field input {
+    width: 100%; padding: 6px 10px; font-size: 13px; color: var(--text);
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius); outline: none; font-family: inherit;
+  }
+  .vessel-field input:focus { border-color: var(--blue-border); background: var(--surface); }
+
+  /* Toolbar */
+  .ai-toolbar {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+  .ai-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 6px 12px; font-size: 12px; font-weight: 500;
+    border-radius: var(--radius); border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text2); cursor: pointer;
+    transition: background .12s, color .12s;
+  }
+  .ai-btn:hover { background: var(--bg); color: var(--text); border-color: var(--border2); }
+  .ai-btn.primary { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .ai-btn.primary:hover { opacity: .88; }
+  .ai-btn.danger { background: var(--red-bg); color: var(--red); border-color: var(--red-border); }
+  .ai-search {
+    flex: 1; min-width: 180px; padding: 6px 10px; font-size: 13px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius); color: var(--text); outline: none; font-family: inherit;
+  }
+  .ai-search:focus { border-color: var(--blue-border); }
+  .ai-count { font-size: 12px; color: var(--text3); margin-left: auto; white-space: nowrap; }
+
+  /* Table wrapper */
+  .ai-table-wrap {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); overflow: hidden;
+  }
+  .ai-scroll { overflow-x: auto; }
+  table.ai-table {
+    width: 100%; border-collapse: collapse; font-size: 12px;
+    min-width: 2400px;
+  }
+  .ai-table thead tr { background: var(--surface2); }
+  .ai-table th {
+    padding: 8px 10px; text-align: left; font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: .06em; color: var(--text3);
+    border-bottom: 1px solid var(--border); border-right: 1px solid var(--border);
+    white-space: nowrap; position: sticky; top: 0; background: var(--surface2); z-index: 2;
+  }
+  .ai-table th:last-child { border-right: none; }
+  .ai-table th .col-id { color: var(--blue); font-size: 9px; display: block; margin-bottom: 1px; }
+  .ai-table th .col-req { color: var(--amber); font-size: 9px; }
+  .ai-table td {
+    padding: 7px 10px; border-bottom: 1px solid var(--border);
+    border-right: 1px solid var(--border); vertical-align: top;
+    color: var(--text); line-height: 1.5;
+  }
+  .ai-table td:last-child { border-right: none; }
+  .ai-table tr:last-child td { border-bottom: none; }
+  .ai-table tr:hover td { background: var(--bg); }
+  .ai-table .td-num { text-align: center; font-weight: 600; color: var(--text3); width: 40px; }
+  .ai-table .td-actions { text-align: center; width: 64px; white-space: nowrap; }
+
+  /* Editable cell */
+  .ai-cell-input {
+    width: 100%; min-width: 80px; padding: 3px 6px; font-size: 12px;
+    background: transparent; border: 1px solid transparent;
+    border-radius: 4px; color: var(--text); font-family: inherit; resize: none;
+    line-height: 1.5;
+  }
+  .ai-cell-input:focus { background: var(--surface); border-color: var(--blue-border); outline: none; }
+  .ai-cell-select {
+    width: 100%; padding: 3px 5px; font-size: 12px;
+    background: transparent; border: 1px solid transparent;
+    border-radius: 4px; color: var(--text); font-family: inherit; cursor: pointer;
+  }
+  .ai-cell-select:focus { background: var(--surface); border-color: var(--blue-border); outline: none; }
+
+  /* Category badges */
+  .cat-badge {
+    display: inline-block; padding: 1px 7px; border-radius: 4px;
+    font-size: 10px; font-weight: 700; white-space: nowrap; border: 1px solid;
+  }
+  .cat-I   { background: var(--green-bg); color: var(--green); border-color: var(--green-border); }
+  .cat-II  { background: var(--amber-bg); color: var(--amber); border-color: var(--amber-border); }
+  .cat-III { background: var(--red-bg);   color: var(--red);   border-color: var(--red-border); }
+  .cat-NA  { background: var(--surface2); color: var(--text3); border-color: var(--border); }
+
+  /* Excl badge */
+  .excl-x { display: inline-block; width: 18px; height: 18px; line-height: 18px; text-align: center;
+    background: var(--red-bg); color: var(--red); border-radius: 4px; font-size: 11px; font-weight: 700; }
+
+  /* Row delete btn */
+  .row-del { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 14px; padding: 2px 4px; border-radius: 4px; }
+  .row-del:hover { background: var(--red-bg); color: var(--red); }
+  .row-dup { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 14px; padding: 2px 4px; border-radius: 4px; }
+  .row-dup:hover { background: var(--blue-bg); color: var(--blue); }
+
+  /* Legend */
+  .ai-legend {
+    display: flex; gap: 14px; flex-wrap: wrap; padding: 10px 16px;
+    border-top: 1px solid var(--border); background: var(--bg);
+    font-size: 11px; color: var(--text3); align-items: center;
+  }
+  .ai-legend-item { display: flex; align-items: center; gap: 5px; }
+
+  /* Export modal overlay */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4);
+    z-index: 200; align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 24px 28px; max-width: 460px; width: 90%;
+    box-shadow: 0 8px 32px rgba(0,0,0,.2);
+  }
+  .modal-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 12px; }
+  .modal-body  { font-size: 13px; color: var(--text2); line-height: 1.7; margin-bottom: 16px; }
+  .modal-btns  { display: flex; gap: 8px; justify-content: flex-end; }
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    width: 100%; padding: 9px; border-radius: var(--radius); border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text2); font-size: 13px; cursor: pointer;
+    transition: background .12s; margin-top: 8px;
+  }
+  .risk-action-btn:hover { background: var(--bg); color: var(--text); }
+  .risk-action-btn.primary { background: var(--blue); color:#fff; border-color:var(--blue); font-weight:500; }
+  .risk-action-btn.primary:hover { opacity:.88; }
+
+  /* ── Disclaimer banner ── */
+  .disclaimer-banner {
+    background: #FFF8E6; border-bottom: 2px solid var(--rina-gold);
+    padding: 10px 2rem; display: flex; align-items: flex-start; gap: 10px;
+    font-size: 12px; line-height: 1.65; color: #5A3E00;
+  }
+  .disclaimer-banner .disc-icon { font-size: 17px; flex-shrink: 0; margin-top: 1px; }
+  .disclaimer-banner .disc-body { flex: 1; }
+  .disclaimer-banner .disc-close {
+    margin-left: auto; flex-shrink: 0; background: none; border: none;
+    font-size: 16px; color: #A07000; cursor: pointer; padding: 0 4px; line-height: 1; border-radius: 4px;
+  }
+  .disclaimer-banner .disc-close:hover { background: rgba(0,0,0,.06); color: #5A3E00; }
+  .disclaimer-banner strong { font-weight: 700; color: #3A2800; }
+  [data-theme="dark"] .disclaimer-banner { background: #201800; border-bottom-color: #C8A84B; color: #D4A830; }
+  [data-theme="dark"] .disclaimer-banner strong { color: #FFE08A; }
+  [data-theme="dark"] .disclaimer-banner .disc-close { color: #C8A84B; }
+
+  /* ── Footer ── */
+  .rina-footer {
+    background: var(--rina-navy); color: rgba(255,255,255,.4);
+    padding: 16px 2rem; font-size: 11px;
+    display: flex; align-items: stretch; justify-content: space-between;
+    flex-wrap: wrap; gap: 10px; margin-top: 2rem;
+    line-height: 1.6;
+  }
+  .rina-footer a { color: rgba(255,255,255,.5); text-decoration: none; }
+  .rina-footer a:hover { color: #fff; }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-left">
+    <!-- Cyber Shield Mark -->
+    <div class="cyber-mark" title="IACS Cyber Resilience Reference Tool">
+      <svg width="38" height="42" viewBox="0 0 38 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Shield outer -->
+        <path d="M19 2 L35 8 L35 22 C35 31 27 38 19 40 C11 38 3 31 3 22 L3 8 Z"
+          fill="rgba(0,114,206,0.18)" stroke="rgba(255,255,255,0.75)" stroke-width="1.4"/>
+        <!-- Shield inner ring -->
+        <path d="M19 6 L31 11 L31 22 C31 29 25 35 19 37 C13 35 7 29 7 22 L7 11 Z"
+          fill="rgba(0,114,206,0.12)" stroke="rgba(255,255,255,0.35)" stroke-width="0.8"/>
+        <!-- Cyber circuit nodes -->
+        <circle cx="19" cy="15" r="2.5" fill="rgba(255,255,255,0.9)"/>
+        <circle cx="13" cy="21" r="1.8" fill="rgba(255,255,255,0.7)"/>
+        <circle cx="25" cy="21" r="1.8" fill="rgba(255,255,255,0.7)"/>
+        <circle cx="19" cy="27" r="1.8" fill="rgba(255,255,255,0.7)"/>
+        <!-- Circuit lines -->
+        <line x1="19" y1="17.5" x2="13" y2="21" stroke="rgba(255,255,255,0.55)" stroke-width="1"/>
+        <line x1="19" y1="17.5" x2="25" y2="21" stroke="rgba(255,255,255,0.55)" stroke-width="1"/>
+        <line x1="13" y1="21" x2="19" y2="27" stroke="rgba(255,255,255,0.55)" stroke-width="1"/>
+        <line x1="25" y1="21" x2="19" y2="27" stroke="rgba(255,255,255,0.55)" stroke-width="1"/>
+        <!-- Pulse dot -->
+        <circle cx="19" cy="15" r="4.5" fill="none" stroke="rgba(0,200,255,0.4)" stroke-width="1">
+          <animate attributeName="r" values="3;6;3" dur="2.5s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values="0.6;0;0.6" dur="2.5s" repeatCount="indefinite"/>
+        </circle>
+      </svg>
+    </div>
+    <div class="header-divider"></div>
+    <div class="theme-toggle">
+      <button class="theme-btn" id="btn-light" title="Light mode">☀️</button>
+      <button class="theme-btn" id="btn-dark"  title="Dark mode">🌙</button>
+    </div>
+    <div class="header-divider"></div>
+    <div>
+      <div class="header-title">Cyber Resilience Reference Tool</div>
+      <div class="header-sub">UR E27 Rev.1 Sep 2023 · Rec. 171 · Rec. 190 — On-board systems &amp; equipment</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 0;">
+    <button class="print-btn" onclick="window.print()">
+      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="1"/></svg>
+      Print / PDF
+    </button>
+  </div>
+</header>
+
+<!-- ── Disclaimer Banner ── -->
+<div class="disclaimer-banner" id="disclaimer-banner">
+  <span class="disc-icon">⚠️</span>
+  <div class="disc-body">
+    <strong>책임 고지 / Disclaimer:</strong>
+    이 도구는 IACS UR E27, Rec. 171, Rec. 190을 기반으로 한 <strong>참고용 보조 자료</strong>입니다.
+    수록된 내용은 정보 제공 목적으로만 사용되어야 하며, 공식 규정 문서를 대체하지 않습니다.
+    실제 선박 시스템의 사이버 보안 적합성 판단, 위험도 평가, 자산 목록 작성 시에는 반드시 원본 IACS 문서 및
+    해당 선급(Class Society)의 공식 요건을 재확인(double-check)하시기 바랍니다.
+    &nbsp;|&nbsp;
+    <strong>This tool is provided for reference purposes only</strong>, based on IACS UR E27, Rec. 171, and Rec. 190.
+    It does not constitute official regulatory guidance and must not be used as a substitute for the source IACS documents.
+    All results — capability applicability, risk levels, and asset inventory entries — must be independently verified against
+    the official IACS Unified Requirements and your Class Society's applicable rules before any compliance or design decision is made.
+    <strong>Always double-check with authoritative sources.</strong>
+  </div>
+  <button class="disc-close" id="disc-close-btn" title="Dismiss">✕</button>
+</div>
+
+<nav class="nav-tabs">
+  <button class="nav-tab active" data-page="checklist">☑ Capability Checklist</button>
+  <button class="nav-tab" data-page="risk">⚠ Risk Level Calculator</button>
+  <button class="nav-tab" data-page="asset">📋 Asset Inventory</button>
+  <button class="nav-tab" data-page="doclist">📄 E26 Doc Checklist</button>
+  <button class="nav-tab" data-page="doclist27">📋 E27 Doc Checklist</button>
+</nav>
+
+<div class="page active" id="page-checklist">
+<div class="layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="panel">
+      <div class="panel-head">System conditions</div>
+      <div class="panel-body">
+        <label class="cond-item" id="card-wireless">
+          <input type="checkbox" id="chk-wireless">
+          <div class="cond-text">
+            <div class="cond-name">No wireless communication</div>
+            <div class="cond-desc">Exempts items 5, 9</div>
+          </div>
+        </label>
+        <label class="cond-item" id="card-untrusted">
+          <input type="checkbox" id="chk-untrusted">
+          <div class="cond-text">
+            <div class="cond-name">No untrusted network connection</div>
+            <div class="cond-desc">Excludes all items 31–41</div>
+          </div>
+        </label>
+        <label class="cond-item" id="card-physkey">
+          <input type="checkbox" id="chk-physkey">
+          <div class="cond-text">
+            <div class="cond-name">Physical key / no software auth</div>
+            <div class="cond-desc">Exempts items 1–4, 6, 7, 8</div>
+          </div>
+        </label>
+        <label class="cond-item" id="card-noos">
+          <input type="checkbox" id="chk-noos">
+          <div class="cond-text">
+            <div class="cond-name">No operating system</div>
+            <div class="cond-desc">Exempts items 11, 18</div>
+          </div>
+        </label>
+        <label class="cond-item" id="card-embedded">
+          <input type="checkbox" id="chk-embedded">
+          <div class="cond-text">
+            <div class="cond-name">Embedded CBS</div>
+            <div class="cond-desc">Exempts items 26, 27</div>
+          </div>
+        </label>
+        <label class="cond-item" id="card-nosession">
+          <input type="checkbox" id="chk-nosession">
+          <div class="cond-text">
+            <div class="cond-name">Emergency operation / No session function</div>
+            <div class="cond-desc">Excludes items 12, 40, 41</div>
+          </div>
+        </label>
+        <label class="cond-item" id="card-nohmi">
+          <input type="checkbox" id="chk-nohmi">
+          <div class="cond-text">
+            <div class="cond-name">No HMI</div>
+            <div class="cond-desc">Exempts item 34</div>
+          </div>
+        </label>
+        <label class="cond-item" id="card-noremote">
+          <input type="checkbox" id="chk-noremote">
+          <div class="cond-text">
+            <div class="cond-name">No remote access</div>
+            <div class="cond-desc">Excludes item 37</div>
+          </div>
+        </label>
+        <label class="cond-item" id="card-noportable">
+          <input type="checkbox" id="chk-noportable">
+          <div class="cond-text">
+            <div class="cond-name">No portable / mobile device</div>
+            <div class="cond-desc">Excludes item 10</div>
+          </div>
+        </label>
+        <label class="cond-item" id="card-nocrypto">
+          <input type="checkbox" id="chk-nocrypto">
+          <div class="cond-text">
+            <div class="cond-name">No cryptography used</div>
+            <div class="cond-desc">Exempts item 22</div>
+          </div>
+        </label>
+        <label class="cond-item" id="card-nonetwork">
+          <input type="checkbox" id="chk-nonetwork">
+          <div class="cond-text">
+            <div class="cond-name">No network / serial communication</div>
+            <div class="cond-desc">Exempts items 17, 21, 24</div>
+          </div>
+        </label>
+        <label class="cond-item" id="card-extaudit">
+          <input type="checkbox" id="chk-extaudit">
+          <div class="cond-text">
+            <div class="cond-name">External audit monitoring applied</div>
+            <div class="cond-desc">Excludes items 14, 15, 16, 23</div>
+          </div>
+        </label>
+        <label class="cond-item" id="card-nooutput">
+          <input type="checkbox" id="chk-nooutput">
+          <div class="cond-text">
+            <div class="cond-name">No output signal to control system</div>
+            <div class="cond-desc">Excludes item 20</div>
+          </div>
+        </label>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- ── Status Dashboard ── -->
+    <div class="status-dashboard">
+      <div class="status-dashboard-head">
+        <span class="status-dashboard-title">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+          Capability Status Overview
+        </span>
+        <span style="font-size:11px;color:var(--text3)">Updates dynamically with system conditions</span>
+      </div>
+      <div class="status-dashboard-body">
+        <!-- Pie chart -->
+        <div class="status-pie-wrap">
+          <div class="pie-container">
+            <canvas id="pie-canvas" width="148" height="148"></canvas>
+            <div class="pie-center-text">
+              <div class="pie-center-total" id="pie-total">41</div>
+              <div class="pie-center-lbl">Applicable</div>
+            </div>
+          </div>
+          <div class="pie-legend">
+            <div class="pie-leg-item">
+              <div class="pie-leg-dot" style="background:var(--blue)"></div>
+              <span>Required (4.1) — <strong id="leg-req">30</strong></span>
+            </div>
+            <div class="pie-leg-item">
+              <div class="pie-leg-dot" style="background:var(--green)"></div>
+              <span>Additional (4.2) — <strong id="leg-add">11</strong></span>
+            </div>
+            <div class="pie-leg-item">
+              <div class="pie-leg-dot" style="background:var(--exempt)"></div>
+              <span>Exempted — <strong id="leg-ex">0</strong></span>
+            </div>
+          </div>
+        </div>
+        <!-- Stat cards -->
+        <div class="status-stats-wrap">
+          <div class="stat-card sc-req">
+            <div class="stat-card-num" id="sc-req">30</div>
+            <div class="stat-card-lbl">Required<br>Section 4.1</div>
+            <div class="stat-card-bar" id="sc-req-bar" style="width:73%"></div>
+          </div>
+          <div class="stat-card sc-add">
+            <div class="stat-card-num" id="sc-add">11</div>
+            <div class="stat-card-lbl">Additional<br>Section 4.2</div>
+            <div class="stat-card-bar" id="sc-add-bar" style="width:27%"></div>
+          </div>
+          <div class="stat-card sc-ex">
+            <div class="stat-card-num" id="sc-ex">0</div>
+            <div class="stat-card-lbl">Exempted /<br>Excluded</div>
+            <div class="stat-card-bar" id="sc-ex-bar" style="width:0%"></div>
+          </div>
+          <div class="stat-card sc-total">
+            <div class="stat-card-num" id="sc-total">41</div>
+            <div class="stat-card-lbl">Total<br>Applicable</div>
+            <div class="stat-card-bar" id="sc-total-bar" style="width:100%;background:var(--blue)"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 4.1 -->
+    <div class="section-block" id="block-41">
+      <div class="section-head">
+        <div class="section-head-left">
+          <span class="section-tag tag-req">Section 4.1</span>
+          <span class="section-title-text">Required capabilities — all in-scope CBS</span>
+        </div>
+        <span class="section-count" id="count-41">30 items</span>
+      </div>
+      <div class="cap-list" id="list-41"></div>
+      <div class="legend">
+        <div class="leg-item"><div class="leg-dot" style="background:var(--blue)"></div>Required</div>
+        <div class="leg-item"><div class="leg-dot" style="background:var(--amber)"></div>Exempted (condition met)</div>
+      </div>
+    </div>
+
+    <!-- Section 4.2 -->
+    <div class="section-block" id="block-42">
+      <div class="section-head">
+        <div class="section-head-left">
+          <span class="section-tag tag-add" id="tag-42">Section 4.2</span>
+          <span class="section-title-text">Additional capabilities — untrusted network interface</span>
+        </div>
+        <span class="section-count" id="count-42">11 items</span>
+      </div>
+      <div class="cap-list" id="list-42"></div>
+      <div class="legend">
+        <div class="leg-item"><div class="leg-dot" style="background:var(--green)"></div>Required</div>
+        <div class="leg-item"><div class="leg-dot" style="background:var(--exempt)"></div>Excluded (no untrusted network)</div>
+      </div>
+    </div>
+  </main>
+</div>
+</div><!-- /page-checklist -->
+
+<!-- ══════════════════════════════════════════════════ -->
+<!-- PAGE: Risk Level Calculator  (IACS Rec. 171)       -->
+<!-- ══════════════════════════════════════════════════ -->
+<div class="page" id="page-risk">
+<div class="risk-layout">
+
+<!-- ── LEFT: Input panels ── -->
+<aside>
+
+  <!-- System Info -->
+  <div class="rpanel">
+    <div class="rpanel-head">System Information</div>
+    <div class="rpanel-body">
+      <div class="rform-group">
+        <label class="rform-label">System / CBS Name</label>
+        <input class="sys-input" type="text" id="r-name" placeholder="e.g. ECDIS, IAS, Main Engine…">
+      </div>
+      <div class="rform-group">
+        <label class="rform-label">UR E22 Category
+          <span class="rform-hint">— determines Cat value in formula</span>
+        </label>
+        <div class="seg-group" data-seg="r-cat">
+          <button class="seg-btn" data-val="1">Cat I<br><span style="font-weight:400;font-size:10px">Non-critical</span></button>
+          <button class="seg-btn" data-val="2">Cat II<br><span style="font-weight:400;font-size:10px">Important</span></button>
+          <button class="seg-btn active" data-val="3">Cat III<br><span style="font-weight:400;font-size:10px">Safety-critical</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Impact Assessment -->
+  <div class="rpanel">
+    <div class="rpanel-head">Impact Assessment (P)
+      <span class="rform-hint">§7.1 Rec.171</span>
+    </div>
+    <div class="rpanel-body">
+      <div class="rform-group">
+        <label class="rform-label">Worst-case Consequence</label>
+        <div class="seg-group" data-seg="r-impact" style="flex-direction:column;border-radius:var(--radius);">
+          <button class="seg-btn" data-val="1" style="border-right:none;border-bottom:1px solid var(--border);text-align:left;padding:7px 10px;">P1 — <strong>Negligible</strong> &nbsp;<span style="font-weight:400;color:inherit;opacity:.8">No significant effect, no human/environmental impact</span></button>
+          <button class="seg-btn" data-val="2" style="border-right:none;border-bottom:1px solid var(--border);text-align:left;padding:7px 10px;">P2 — <strong>Acceptable</strong> &nbsp;<span style="font-weight:400;opacity:.8">Service disruption, minor injury, minor env. impact</span></button>
+          <button class="seg-btn active" data-val="3" style="border-right:none;border-bottom:1px solid var(--border);text-align:left;padding:7px 10px;">P3 — <strong>Moderate</strong> &nbsp;<span style="font-weight:400;opacity:.8">Data loss, financial loss, tarnished reputation, disability</span></button>
+          <button class="seg-btn" data-val="4" style="border-right:none;border-bottom:1px solid var(--border);text-align:left;padding:7px 10px;">P4 — <strong>High</strong> &nbsp;<span style="font-weight:400;opacity:.8">Physical damage, ransomware, vessel off, death</span></button>
+          <button class="seg-btn" data-val="5" style="border-right:none;text-align:left;padding:7px 10px;">P5 — <strong>Catastrophic</strong> &nbsp;<span style="font-weight:400;opacity:.8">Vessel loss, explosion, fleet blackout, multiple deaths</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Likelihood: Complexity -->
+  <div class="rpanel">
+    <div class="rpanel-head">Likelihood — Complexity (CX)
+      <span class="rform-hint">§7.2.1</span>
+    </div>
+    <div class="rpanel-body">
+      <div class="seg-group" data-seg="r-cx">
+        <button class="seg-btn active" data-val="1">CX1<br><span style="font-weight:400;font-size:10px">Low-maintenance</span></button>
+        <button class="seg-btn" data-val="2">CX2<br><span style="font-weight:400;font-size:10px">Living system</span></button>
+        <button class="seg-btn" data-val="3">CX3<br><span style="font-weight:400;font-size:10px">Distributed</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Likelihood: Connectivity -->
+  <div class="rpanel">
+    <div class="rpanel-head">Likelihood — Connectivity (CY)
+      <span class="rform-hint">§7.2.2</span>
+    </div>
+    <div class="rpanel-body">
+      <div class="seg-group" data-seg="r-cy" style="flex-direction:column;border-radius:var(--radius);">
+        <button class="seg-btn active" data-val="1" style="border-right:none;border-bottom:1px solid var(--border);text-align:left;padding:7px 10px;">CY1 — <strong>Isolated</strong> &nbsp;<span style="font-weight:400;opacity:.8">No connection to any other system</span></button>
+        <button class="seg-btn" data-val="2" style="border-right:none;border-bottom:1px solid var(--border);text-align:left;padding:7px 10px;">CY2 — <strong>Closed</strong> &nbsp;<span style="font-weight:400;opacity:.8">Serial/NMEA/Modbus within ship, closed environment</span></button>
+        <button class="seg-btn" data-val="3" style="border-right:none;border-bottom:1px solid var(--border);text-align:left;padding:7px 10px;">CY3 — <strong>Network</strong> &nbsp;<span style="font-weight:400;opacity:.8">Ethernet/WiFi internal or authenticated external link</span></button>
+        <button class="seg-btn" data-val="4" style="border-right:none;border-bottom:1px solid var(--border);text-align:left;padding:7px 10px;">CY4 — <strong>DMZ</strong> &nbsp;<span style="font-weight:400;opacity:.8">External link with VPN/TLS and DMZ architecture</span></button>
+        <button class="seg-btn" data-val="5" style="border-right:none;text-align:left;padding:7px 10px;">CY5 — <strong>Open</strong> &nbsp;<span style="font-weight:400;opacity:.8">Public network access or unknown protection</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Human Factor -->
+  <div class="rpanel">
+    <div class="rpanel-head">Human Factor — End-Users (US)
+      <span class="rform-hint">§7.2.4</span>
+    </div>
+    <div class="rpanel-body">
+      <div class="seg-group" data-seg="r-us" style="flex-direction:column;border-radius:var(--radius);">
+        <button class="seg-btn active" data-val="1" style="border-right:none;border-bottom:1px solid var(--border);text-align:left;padding:7px 10px;">US1 — <strong>Aware</strong> &nbsp;<span style="font-weight:400;opacity:.8">Well trained, locked room, dedicated account+password</span></button>
+        <button class="seg-btn" data-val="2" style="border-right:none;border-bottom:1px solid var(--border);text-align:left;padding:7px 10px;">US2 — <strong>Controlled</strong> &nbsp;<span style="font-weight:400;opacity:.8">Cyber aware but poorly trained, locked room, generic password</span></button>
+        <button class="seg-btn" data-val="3" style="border-right:none;border-bottom:1px solid var(--border);text-align:left;padding:7px 10px;">US3 — <strong>Accredited</strong> &nbsp;<span style="font-weight:400;opacity:.8">Very poorly trained, access by accreditation only, no logical control</span></button>
+        <button class="seg-btn" data-val="4" style="border-right:none;text-align:left;padding:7px 10px;">US4 — <strong>Any User</strong> &nbsp;<span style="font-weight:400;opacity:.8">No training planned, no physical or logical protection</span></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="rpanel">
+    <div class="rpanel-head">Human Factor — Attacker Level (AT)
+      <span class="rform-hint">§7.2.5</span>
+    </div>
+    <div class="rpanel-body">
+      <div class="seg-group" data-seg="r-at" style="flex-direction:column;border-radius:var(--radius);">
+        <button class="seg-btn" data-val="1" style="border-right:none;border-bottom:1px solid var(--border);text-align:left;padding:7px 10px;">AT1 — <strong>Unintentional</strong> &nbsp;<span style="font-weight:400;opacity:.8">Crew accidentally introduced common malware</span></button>
+        <button class="seg-btn" data-val="2" style="border-right:none;border-bottom:1px solid var(--border);text-align:left;padding:7px 10px;">AT2 — <strong>Insider</strong> &nbsp;<span style="font-weight:400;opacity:.8">Crew bypassing security without malicious intent</span></button>
+        <button class="seg-btn active" data-val="3" style="border-right:none;border-bottom:1px solid var(--border);text-align:left;padding:7px 10px;">AT3 — <strong>Standard</strong> &nbsp;<span style="font-weight:400;opacity:.8">Malicious attacker using hacking tools (default)</span></button>
+        <button class="seg-btn" data-val="4" style="border-right:none;border-bottom:1px solid var(--border);text-align:left;padding:7px 10px;">AT4 — <strong>Criminal</strong> &nbsp;<span style="font-weight:400;opacity:.8">Invests time/money, builds APT for targeted attack</span></button>
+        <button class="seg-btn" data-val="5" style="border-right:none;text-align:left;padding:7px 10px;">AT5 — <strong>Cyber warfare</strong> &nbsp;<span style="font-weight:400;opacity:.8">State-backed attacks (naval vessels only)</span></button>
+      </div>
+    </div>
+  </div>
+
+  <button class="risk-action-btn primary" id="btn-save-r">＋ Save Assessment</button>
+  <button class="risk-action-btn" id="btn-reset-r">↺ Reset</button>
+</aside>
+
+<!-- ── RIGHT: Results ── -->
+<main>
+
+  <!-- Main result -->
+  <div class="rresult">
+    <div class="rresult-head">
+      Risk Level Result — <span id="r-name-out" style="color:var(--text3);font-weight:400">New System</span>
+      <div class="rl-treatment rlt-opt" id="rl-treatment-badge">—</div>
+    </div>
+    <div class="rl-gauge-wrap">
+      <div class="rl-circle rl-c1" id="rl-circle">
+        <span class="rl-num" id="rl-num">—</span>
+        <span class="rl-lbl">Risk Level</span>
+      </div>
+      <div class="rl-detail">
+        <div class="rl-formula" id="rl-formula">RL = 2 × (Cat + L + P − 4) = <span id="rl-formula-val">—</span></div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:8px;" id="rl-treatment-desc">—</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <div style="font-size:12px;color:var(--text3);">Residual Risk after mitigation:</div>
+          <div style="font-size:13px;font-weight:600;color:var(--blue);" id="rrl-display">—</div>
+        </div>
+      </div>
+    </div>
+    <div class="rl-breakdown">
+      <div class="rlb-cell"><div class="rlb-val" id="bd-cat">—</div><div class="rlb-lbl">Category (Cat)</div></div>
+      <div class="rlb-cell"><div class="rlb-val" id="bd-l">—</div><div class="rlb-lbl">Likelihood (L)</div></div>
+      <div class="rlb-cell"><div class="rlb-val" id="bd-p">—</div><div class="rlb-lbl">Impact (P)</div></div>
+    </div>
+  </div>
+
+  <!-- Likelihood chain -->
+  <div class="rresult">
+    <div class="rresult-head">Likelihood Calculation Chain</div>
+    <div class="lk-chain">
+      <div style="font-size:12px;color:var(--text2);margin-bottom:6px;">CX + CY → Attack Surface (AS) &nbsp;|&nbsp; US + AT → Human Factor (H) &nbsp;|&nbsp; AS + H → Likelihood (L)</div>
+      <div class="lk-steps" id="lk-steps">
+        <span class="lk-step" id="lk-cx">CX—</span>
+        <span class="lk-arrow">+</span>
+        <span class="lk-step" id="lk-cy">CY—</span>
+        <span class="lk-arrow">→</span>
+        <span class="lk-step active" id="lk-as">AS—</span>
+        <span class="lk-arrow" style="margin:0 6px;">|</span>
+        <span class="lk-step" id="lk-us">US—</span>
+        <span class="lk-arrow">+</span>
+        <span class="lk-step" id="lk-at">AT—</span>
+        <span class="lk-arrow">→</span>
+        <span class="lk-step active" id="lk-h">H—</span>
+        <span class="lk-arrow" style="margin:0 6px;">→</span>
+        <span class="lk-step active lk-final" id="lk-l">L— (—)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mitigation measures -->
+  <div class="rresult">
+    <div class="rresult-head">Mitigation Measures (§8 Rec.171)
+      <span style="font-size:12px;font-weight:400;color:var(--text3)">Select to calculate Residual Risk Level (RRL)</span>
+    </div>
+    <div style="padding:12px 16px;">
+      <div class="mit-list">
+        <label class="mit-item" data-reduce="1">
+          <input type="checkbox" id="mit-human">
+          <div class="mit-text">
+            <div class="mit-name">§8.1.1 Human-related measures</div>
+            <div class="mit-desc">Crew cyber security awareness training and regular vigilance drills</div>
+          </div>
+          <span class="mit-reduce">RRL −1</span>
+        </label>
+        <label class="mit-item" data-reduce="3">
+          <input type="checkbox" id="mit-org">
+          <div class="mit-text">
+            <div class="mit-name">§8.1.2 Organisational measures</div>
+            <div class="mit-desc">Procedures for monitoring, maintenance, incident response (ISM Code aligned)</div>
+          </div>
+          <span class="mit-reduce">RRL −3</span>
+        </label>
+        <label class="mit-item" data-reduce="6">
+          <input type="checkbox" id="mit-monitor">
+          <div class="mit-text">
+            <div class="mit-name">§8.2.1 Technical monitoring solution</div>
+            <div class="mit-desc">Real-time threat detection, IPS, network security monitoring, MDR</div>
+          </div>
+          <span class="mit-reduce">RRL −6</span>
+        </label>
+        <label class="mit-item" data-reduce="7">
+          <input type="checkbox" id="mit-harden">
+          <div class="mit-text">
+            <div class="mit-name">§8.2.2 Technical hardening measures</div>
+            <div class="mit-desc">Data Diode, DMZ installation, or use of certified/type-approved equipment</div>
+          </div>
+          <span class="mit-reduce">RRL −7</span>
+        </label>
+        <label class="mit-item" data-reduce="9">
+          <input type="checkbox" id="mit-combo">
+          <div class="mit-text">
+            <div class="mit-name">§8.3 Combined non-technical + technical</div>
+            <div class="mit-desc">At least one non-technical AND at least one technical measure implemented together</div>
+          </div>
+          <span class="mit-reduce">RRL −9</span>
+        </label>
+      </div>
+    </div>
+    <div class="rrl-box rrl-opt" id="rrl-box">Select mitigation measures above to calculate the Residual Risk Level (RRL). Minimum RRL = 1.</div>
+  </div>
+
+  <!-- ── CBS Exclusion Acceptance Criteria (UR E27 §6.4) ── -->
+  <div class="rresult">
+    <div class="rresult-head" style="flex-direction:column;align-items:flex-start;gap:6px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;width:100%;flex-wrap:wrap;gap:6px;">
+        <span>CBS Exclusion Acceptance Criteria &nbsp;<span style="font-size:11px;color:var(--text3);font-weight:400;">UR E26 §6.4</span></span>
+        <span class="doc-status-badge" id="excl-verdict-badge" style="font-size:11px;padding:3px 10px;border-radius:5px;border:1px solid var(--border);background:var(--surface2);color:var(--text3);">Not assessed</span>
+      </div>
+      <div style="font-size:11px;color:var(--text3);font-weight:400;line-height:1.5;">
+        Exclusion from UR E27 scope may be accepted by the Classification Society only if the CBS has no impact on safety of operations regarding cyber risk. Check all criteria that are satisfied.
+      </div>
+    </div>
+
+    <!-- Mandatory criteria -->
+    <div class="excl-section">
+      <div class="excl-section-title">
+        <span class="excl-pill excl-pill-mand">Mandatory</span>
+        Criteria to be met for exclusion — all must be satisfied
+      </div>
+      <div id="excl-mand-list">
+        <label class="excl-item" data-excl="mand" data-id="em1">
+          <input type="checkbox" class="mand" id="em1">
+          <span class="excl-item-lbl">a)</span>
+          <span class="excl-item-text">The CBS is <strong>isolated</strong> — has no IP-network connections to other systems or networks.</span>
+        </label>
+        <label class="excl-item" data-excl="mand" data-id="em2">
+          <input type="checkbox" class="mand" id="em2">
+          <span class="excl-item-lbl">b)</span>
+          <span class="excl-item-text">The CBS has <strong>no accessible physical interface ports</strong>. Unused interfaces are logically disabled. It is not possible to connect unauthorised devices to the CBS.</span>
+        </label>
+        <label class="excl-item" data-excl="mand" data-id="em3">
+          <input type="checkbox" class="mand" id="em3">
+          <span class="excl-item-lbl">c)</span>
+          <span class="excl-item-text">The CBS is located in areas where <strong>physical access is controlled</strong>.</span>
+        </label>
+        <label class="excl-item" data-excl="mand" data-id="em4">
+          <input type="checkbox" class="mand" id="em4">
+          <span class="excl-item-lbl">d)</span>
+          <span class="excl-item-text">The CBS is <strong>not an integrated control system</strong> serving multiple ship functions as specified in the scope of applicability of this UR (see UR E27 §1.3).</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Additional criteria -->
+    <div class="excl-section" style="border-top:1px solid var(--border);">
+      <div class="excl-section-title">
+        <span class="excl-pill excl-pill-add">Additional</span>
+        Additional criteria for evaluation of risk level acceptability
+      </div>
+      <div id="excl-add-list">
+        <label class="excl-item" data-excl="add" data-id="ea1">
+          <input type="checkbox" class="add" id="ea1">
+          <span class="excl-item-lbl">a)</span>
+          <span class="excl-item-text">The CBS does <strong>not serve ship functions of Category III</strong>.</span>
+        </label>
+        <label class="excl-item" data-excl="add" data-id="ea2">
+          <input type="checkbox" class="add" id="ea2">
+          <span class="excl-item-lbl">b)</span>
+          <span class="excl-item-text"><strong>Known vulnerabilities, threats, potential impacts</strong> deriving from a cyber incident affecting the CBS have been duly considered in the risk assessment.</span>
+        </label>
+        <label class="excl-item" data-excl="add" data-id="ea3">
+          <input type="checkbox" class="add" id="ea3">
+          <span class="excl-item-lbl">c)</span>
+          <span class="excl-item-text">The <strong>attack surface is minimized</strong>, having considered its complexity, connectivity, physical and logical access points, including wireless access points.</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Verdict -->
+    <div style="padding:0 20px 16px;">
+      <div class="excl-verdict ev-none" id="excl-verdict">
+        <span class="excl-verdict-icon">○</span>
+        <span id="excl-verdict-text">Check the criteria above to evaluate whether this CBS may be excluded from the scope of UR E27.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Saved assessments -->
+  <div class="rresult">
+    <div class="rresult-head">
+      Saved Assessments
+      <button class="risk-action-btn" id="btn-clear-r" style="width:auto;margin:0;padding:4px 12px;font-size:12px;">Clear all</button>
+    </div>
+    <div style="padding:12px 16px;">
+      <div class="saved-list" id="saved-list">
+        <div class="empty-state"><div class="es-icon">📋</div>No assessments saved yet.<br>Fill in the form and click "Save Assessment".</div>
+      </div>
+    </div>
+  </div>
+
+</main>
+</div>
+</div><!-- /page-risk -->
+
+<!-- ══════════════════════════════════════════════════ -->
+<!-- PAGE: Vessel Asset Inventory  (IACS Rec. 190)      -->
+<!-- ══════════════════════════════════════════════════ -->
+<div class="page" id="page-asset">
+<div class="ai-layout">
+
+  <!-- Vessel header -->
+  <div class="vessel-card" id="vessel-header">
+    <div class="vessel-field"><label>Vessel Name</label><input id="v-name" placeholder="e.g. MV AURORA"></div>
+    <div class="vessel-field"><label>IMO Number</label><input id="v-imo" placeholder="e.g. 9876543"></div>
+    <div class="vessel-field"><label>Class Society ID <span style="color:var(--text3);font-weight:400">(Rec.)</span></label><input id="v-class" placeholder="e.g. DNV-2025-001"></div>
+    <div class="vessel-field"><label>Shipyard / ID <span style="color:var(--text3);font-weight:400">(Rec.)</span></label><input id="v-yard" placeholder="e.g. HHI / HN-1234"></div>
+    <div class="vessel-field"><label>Inventory Date</label><input id="v-date" type="date"></div>
+    <div class="vessel-field"><label>Version</label><input id="v-ver" placeholder="e.g. Rev.3"></div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="ai-toolbar">
+    <button class="ai-btn primary" id="ai-add-row">＋ Add Item</button>
+    <button class="ai-btn" id="ai-import-sample">📂 Load Sample (Rec.190 App.2)</button>
+    <button class="ai-btn" id="ai-export-csv">⬇ Export CSV</button>
+    <input class="ai-search" id="ai-search" placeholder="🔍 Search items…" type="text">
+    <span class="ai-count" id="ai-count">0 items</span>
+    <button class="ai-btn danger" id="ai-clear-all">🗑 Clear all</button>
+  </div>
+
+  <!-- Table -->
+  <div class="ai-table-wrap">
+    <div class="ai-scroll">
+      <table class="ai-table" id="ai-table">
+        <thead>
+          <tr>
+            <th><span class="col-id">Col A</span>#</th>
+            <th><span class="col-id">Col B</span>Ship Functions &amp; Systems <span class="col-req">●</span></th>
+            <th><span class="col-id">Col C</span>System <span class="col-req">●</span></th>
+            <th><span class="col-id">Col D</span>Equipment <span class="col-req">●</span></th>
+            <th><span class="col-id">Col E</span>Category (UR E22) <span class="col-req">●</span></th>
+            <th><span class="col-id">Col F</span>Brand / Manufacturer <span class="col-req">●</span></th>
+            <th><span class="col-id">Col G</span>Model / Type <span class="col-req">●</span></th>
+            <th><span class="col-id">Col H</span>Unique Identifier <span class="col-req">●</span></th>
+            <th><span class="col-id">Col I</span>OS (Version &amp; Patch) <span class="col-req">●</span></th>
+            <th><span class="col-id">Col J</span>Firmware (Version &amp; Patch) <span class="col-req">●</span></th>
+            <th><span class="col-id">Col K</span>Software &amp; Version <span class="col-req">●</span></th>
+            <th><span class="col-id">Col L</span>Location Onboard <span class="col-req">●</span></th>
+            <th><span class="col-id">Col M</span>Security Zone <span class="col-req">●</span></th>
+            <th><span class="col-id">Col N</span>Function / Purpose <span class="col-req">●</span></th>
+            <th><span class="col-id">Col O</span>Connections (In-scope) <span style="color:var(--green);font-size:9px">★Rec</span></th>
+            <th><span class="col-id">Col P</span>Connections (Untrusted) <span style="color:var(--green);font-size:9px">★Rec</span></th>
+            <th><span class="col-id">Col Q</span>Physical Interfaces <span class="col-req">●</span></th>
+            <th><span class="col-id">Col R</span>Protocols <span class="col-req">●</span></th>
+            <th><span class="col-id">Col S</span>IP / MAC <span style="color:var(--text3);font-size:9px">Optional</span></th>
+            <th><span class="col-id">Col T</span>Certificate <span style="color:var(--green);font-size:9px">★Rec</span></th>
+            <th><span class="col-id">Col U</span>Excluded (E26 §6) <span style="color:var(--green);font-size:9px">★Rec</span></th>
+            <th><span class="col-id">Col V</span>Update Log <span class="col-req">●</span></th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="ai-tbody"></tbody>
+      </table>
+    </div>
+    <div class="ai-legend">
+      <span style="font-size:11px;font-weight:600;color:var(--text2);">Legend:</span>
+      <span class="ai-legend-item"><span class="col-req" style="color:var(--amber);font-size:12px">●</span> Required (UR E26)</span>
+      <span class="ai-legend-item"><span style="color:var(--green);font-size:12px">★</span> Recommended (Rec.190)</span>
+      <span class="ai-legend-item"><span style="color:var(--text3);font-size:11px">Optional</span> = Owner policy dependent</span>
+      <span class="ai-legend-item"><span class="cat-badge cat-I">Cat I</span> Non-critical</span>
+      <span class="ai-legend-item"><span class="cat-badge cat-II">Cat II</span> Important</span>
+      <span class="ai-legend-item"><span class="cat-badge cat-III">Cat III</span> Safety-critical</span>
+      <span class="ai-legend-item"><span class="excl-x">X</span> Excluded per UR E26 §6</span>
+    </div>
+  </div>
+
+</div>
+</div><!-- /page-asset -->
+
+<!-- ══════════════════════════════════════════════════ -->
+<!-- PAGE: E26 Document List Checking  (IACS UR E26)    -->
+<!-- ══════════════════════════════════════════════════ -->
+<div class="page" id="page-doclist">
+<div class="doc-layout">
+
+  <!-- Phase & Role selector -->
+  <div class="doc-phase-bar">
+    <div class="doc-phase-section">
+      <div class="doc-phase-label">Responsible Party</div>
+      <div class="doc-phase-btns" id="role-btns">
+        <button class="doc-phase-btn doc-role-btn active" data-role="all">All</button>
+        <button class="doc-phase-btn doc-role-btn" data-role="si">Systems Integrator</button>
+        <button class="doc-phase-btn doc-role-btn" data-role="so">Shipowner</button>
+      </div>
+    </div>
+    <div class="doc-phase-divider"></div>
+    <div class="doc-phase-section">
+      <div class="doc-phase-label">Current Phase / Survey</div>
+      <div class="doc-phase-btns" id="phase-btns">
+        <button class="doc-phase-btn" data-phase="all">All phases</button>
+        <button class="doc-phase-btn" data-phase="design">Design</button>
+        <button class="doc-phase-btn" data-phase="construction">Construction</button>
+        <button class="doc-phase-btn" data-phase="commissioning">Commissioning</button>
+        <button class="doc-phase-btn" data-phase="operation">Operation</button>
+        <button class="doc-phase-btn" data-phase="1stas">1st AS</button>
+        <button class="doc-phase-btn" data-phase="as">AS</button>
+        <button class="doc-phase-btn" data-phase="ss">SS</button>
+      </div>
+    </div>
+    <div class="doc-phase-divider"></div>
+    <div class="doc-phase-section">
+      <div class="doc-phase-label">Actions</div>
+      <div class="doc-phase-btns">
+        <button class="doc-phase-btn" id="e26-reset-btn">↺ Reset checks</button>
+        <button class="doc-phase-btn" id="e26-check-all-btn">✓ Check all visible</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Progress card -->
+  <div class="doc-progress-card">
+    <div>
+      <div class="doc-prog-title">E26 Document Completion Progress</div>
+      <div class="doc-prog-bar-wrap"><div class="doc-prog-bar-fill" id="e26-prog-fill" style="width:0%"></div></div>
+      <div class="doc-prog-counts" id="e26-prog-counts"><span id="e26-done">0</span> of <span id="e26-total">0</span> required documents checked</div>
+    </div>
+    <div>
+      <div class="doc-prog-pct" id="e26-prog-pct">0%</div>
+      <div class="doc-prog-pct-lbl">Complete</div>
+    </div>
+  </div>
+
+  <!-- Document list -->
+  <div class="doc-list" id="e26-doc-list"></div>
+
+</div>
+</div><!-- /page-doclist -->
+
+<!-- ══════════════════════════════════════════════════ -->
+<!-- PAGE: E27 Document List Checking  (IACS UR E27)    -->
+<!-- ══════════════════════════════════════════════════ -->
+<div class="page" id="page-doclist27">
+<div class="doc-layout">
+
+  <!-- Filter bar -->
+  <div class="doc-phase-bar">
+    <div class="doc-phase-section">
+      <div class="doc-phase-label">Type Approval Status</div>
+      <div class="doc-phase-btns" id="e27-approval-btns">
+        <button class="doc-phase-btn doc-e27-approval active" data-approval="all">All</button>
+        <button class="doc-phase-btn doc-e27-approval" data-approval="no-ta">Note 1 — No type approval</button>
+        <button class="doc-phase-btn doc-e27-approval" data-approval="ta">Note 2 — Type approved</button>
+      </div>
+    </div>
+    <div class="doc-phase-divider"></div>
+    <div class="doc-phase-section">
+      <div class="doc-phase-label">Class Action</div>
+      <div class="doc-phase-btns" id="e27-class-btns">
+        <button class="doc-phase-btn doc-e27-class active" data-class="all">All</button>
+        <button class="doc-phase-btn doc-e27-class" data-class="approve">Approve</button>
+        <button class="doc-phase-btn doc-e27-class" data-class="info">Info</button>
+      </div>
+    </div>
+    <div class="doc-phase-divider"></div>
+    <div class="doc-phase-section">
+      <div class="doc-phase-label">Actions</div>
+      <div class="doc-phase-btns">
+        <button class="doc-phase-btn" id="e27-reset-btn">↺ Reset checks</button>
+        <button class="doc-phase-btn" id="e27-check-all-btn">✓ Check all visible</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notes legend -->
+  <div style="background:var(--amber-bg);border:1px solid var(--amber-border);border-radius:var(--radius);padding:10px 16px;margin-bottom:1rem;font-size:12px;color:var(--amber);line-height:1.7;">
+    <strong>Note 1:</strong> Required for CBS <em>without</em> type approved security capabilities &nbsp;|&nbsp;
+    <strong>Note 2:</strong> Required for CBS <em>with</em> type approved security capabilities
+  </div>
+
+  <!-- Progress card -->
+  <div class="doc-progress-card">
+    <div>
+      <div class="doc-prog-title">E27 Document Completion Progress</div>
+      <div class="doc-prog-bar-wrap"><div class="doc-prog-bar-fill" id="e27-prog-fill" style="width:0%"></div></div>
+      <div class="doc-prog-counts"><span id="e27-done">0</span> of <span id="e27-total">0</span> required documents checked</div>
+    </div>
+    <div>
+      <div class="doc-prog-pct" id="e27-prog-pct">0%</div>
+      <div class="doc-prog-pct-lbl">Complete</div>
+    </div>
+  </div>
+
+  <!-- Document list -->
+  <div class="doc-list" id="e27-doc-list"></div>
+
+</div>
+</div><!-- /page-doclist27 -->
+
+<!-- Export confirm modal -->
+<div class="modal-overlay" id="export-modal">
+  <div class="modal-box">
+    <div class="modal-title">Export Asset Inventory as CSV</div>
+    <div class="modal-body">
+      The CSV will include all vessel header information and all inventory rows (columns A–V).<br><br>
+      <strong>Note:</strong> If your inventory contains confidential data (IP addresses, protocols, port numbers), ensure access controls are in place per IACS Rec. 190 §5.
+    </div>
+    <div class="modal-btns">
+      <button class="ai-btn" id="modal-cancel">Cancel</button>
+      <button class="ai-btn primary" id="modal-confirm">Export CSV</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Checklist data ──
+const CAPS_41 = [
+  { n:1,  name:"Human user identification and authentication",    desc:"The CBS shall identify and authenticate all human users who can access the system directly or through interfaces.",                                           ref:"SR 1.1" },
+  { n:2,  name:"Account management",                              desc:"Support management of all accounts by authorized users, including adding, activating, modifying, disabling and removing accounts.",                             ref:"SR 1.3" },
+  { n:3,  name:"Identifier management",                           desc:"Support management of identifiers by user, group and role.",                                                                                                    ref:"SR 1.4" },
+  { n:4,  name:"Authenticator management",                        desc:"Initialize, change default, change/refresh, and protect authenticators from unauthorized disclosure and modification when stored and transmitted.",              ref:"SR 1.5" },
+  { n:5,  name:"Wireless access management",                      desc:"Identify and authenticate all users (humans, software processes or devices) engaged in wireless communication.",                                                ref:"SR 1.6" },
+  { n:6,  name:"Strength of password-based authentication",       desc:"Enforce configurable password strength based on minimum length and variety of character types.",                                                               ref:"SR 1.7" },
+  { n:7,  name:"Authenticator feedback",                          desc:"Obscure feedback during the authentication process.",                                                                                                           ref:"SR 1.10" },
+  { n:8,  name:"Authorization enforcement",                       desc:"Assign human users authorizations in accordance with the principles of segregation of duties and least privilege on all interfaces.",                          ref:"SR 2.1" },
+  { n:9,  name:"Wireless use control",                            desc:"Authorize, monitor and enforce usage restrictions for wireless connectivity according to commonly accepted security industry practices.",                       ref:"SR 2.2" },
+  { n:10, name:"Use control for portable and mobile devices",     desc:"Limit use to permitted devices by design and restrict code and data transfer to/from portable and mobile devices.",                                            ref:"SR 2.3" },
+  { n:11, name:"Mobile code",                                     desc:"Control the use of mobile code such as JavaScript, ActiveX and PDF.",                                                                                          ref:"SR 2.4" },
+  { n:12, name:"Session lock",                                    desc:"Prevent further access after a configurable time of inactivity or following activation of manual session lock.",                                               ref:"SR 2.5" },
+  { n:13, name:"Auditable events",                                desc:"Generate audit records for: access control, OS events, backup and restore events, configuration changes, loss of communication.",                              ref:"SR 2.8" },
+  { n:14, name:"Audit storage capacity",                          desc:"Allocate audit record storage capacity according to commonly recognized recommendations for log management.",                                                   ref:"SR 2.9" },
+  { n:15, name:"Response to audit processing failures",           desc:"Prevent loss of essential services and functions in the event of an audit processing failure.",                                                                ref:"SR 2.10" },
+  { n:16, name:"Timestamps",                                      desc:"Timestamp all audit records.",                                                                                                                                ref:"SR 2.11" },
+  { n:17, name:"Communication integrity",                         desc:"Protect the integrity of transmitted information. Cryptographic mechanisms shall be employed for wireless networks.",                                          ref:"SR 3.1" },
+  { n:18, name:"Malicious code protection",                       desc:"Implement suitable protection measures to prevent, detect and mitigate malicious code or unauthorized software, with updatable protection mechanisms.",        ref:"SR 3.2" },
+  { n:19, name:"Security functionality verification",             desc:"Support verification of the intended operation of security functions and report anomalies during maintenance.",                                                 ref:"SR 3.3" },
+  { n:20, name:"Deterministic output",                            desc:"Set outputs to a predetermined state (unpowered, last-known value, or fixed value) if normal operation cannot be maintained due to an attack.",                ref:"SR 3.6" },
+  { n:21, name:"Information confidentiality",                     desc:"Protect confidentiality of information for which explicit read authorization is supported, at rest or in transit. Cryptography required for wireless.",        ref:"SR 4.1" },
+  { n:22, name:"Use of cryptography",                             desc:"If cryptography is used, employ algorithms, key sizes and mechanisms according to commonly accepted security industry practices and recommendations.",          ref:"SR 4.3" },
+  { n:23, name:"Audit log accessibility",                         desc:"Provide the capability for read-only access to audit logs by authorized humans and/or tools.",                                                                 ref:"SR 6.1" },
+  { n:24, name:"Denial of service (DoS) protection",             desc:"Maintain essential functions during DoS events. Degraded mode is acceptable, but shall not fail in a manner causing hazardous situations.",                   ref:"SR 7.1" },
+  { n:25, name:"Resource management",                             desc:"Limit the use of resources by security functions to prevent resource exhaustion.",                                                                             ref:"SR 7.2" },
+  { n:26, name:"System backup",                                   desc:"Support identity and location of critical files and conduct backups of user-level and system-level information without affecting normal operations.",           ref:"SR 7.3" },
+  { n:27, name:"System recovery and reconstitution",              desc:"Be recovered and reconstituted to a known secure state after a disruption or failure.",                                                                        ref:"SR 7.4" },
+  { n:28, name:"Alternative power source",                        desc:"Switch to and from an alternative power source without affecting the existing security state or a documented degraded mode.",                                   ref:"SR 7.5" },
+  { n:29, name:"Network and security configuration settings",     desc:"Configure CBS traffic according to recommended network and security configurations and provide an interface to currently deployed settings.",                  ref:"SR 7.6" },
+  { n:30, name:"Least functionality",                             desc:"Limit installation, availability and access rights of OS software components, processes, services, network services, ports, protocols and routes.",           ref:"SR 7.7" },
+];
+const CAPS_42 = [
+  { n:31, name:"Multifactor authentication for human users",      desc:"Multifactor authentication required for human users accessing the CBS from or via an untrusted network.",                                                     ref:"SR 1.1 RE2" },
+  { n:32, name:"Software process and device authentication",      desc:"Identify and authenticate software processes and devices.",                                                                                                    ref:"SR 1.2" },
+  { n:33, name:"Unsuccessful login attempt limit",                desc:"Enforce a limit of consecutive invalid login attempts from untrusted networks during a specified time period.",                                                ref:"SR 1.11" },
+  { n:34, name:"System use notification",                         desc:"Display a configurable system use notification message before authenticating. Message shall be configurable by authorized personnel.",                         ref:"SR 1.12" },
+  { n:35, name:"Access via untrusted networks",                   desc:"Any access to the CBS from or via untrusted networks shall be monitored and controlled.",                                                                     ref:"SR 1.13" },
+  { n:36, name:"Explicit access request approval",                desc:"Deny access from or via untrusted networks unless explicitly approved by authorized personnel on board.",                                                      ref:"SR 1.13 RE1" },
+  { n:37, name:"Remote session termination",                      desc:"Terminate a remote session automatically after a configurable inactivity period or manually by the initiating user.",                                          ref:"SR 2.6" },
+  { n:38, name:"Cryptographic integrity protection",              desc:"Employ cryptographic mechanisms to recognize changes to information during communication with or via untrusted networks.",                                      ref:"SR 3.1 RE1" },
+  { n:39, name:"Input validation",                                desc:"Validate syntax, length and content of any input data via untrusted networks that is used as process control input or directly impacts the CBS action.",        ref:"SR 3.5" },
+  { n:40, name:"Session integrity",                               desc:"Protect the integrity of sessions. Invalid session IDs shall be rejected.",                                                                                   ref:"SR 3.8" },
+  { n:41, name:"Invalidation of session IDs after termination",  desc:"Invalidate session IDs upon user logout or other session termination, including browser sessions.",                                                            ref:"SR 3.8 RE1" },
+];
+const EXEMPTIONS = {
+  wireless:   { items:[5,9],           reason:"No wireless" },
+  physkey:    { items:[1,2,3,4,6,7,8], reason:"Physical key" },
+  noos:       { items:[11,18],         reason:"No OS" },
+  embedded:   { items:[26,27],         reason:"Embedded CBS" },
+  nocrypto:   { items:[22],            reason:"No cryptography" },
+  nonetwork:  { items:[17,21,24],      reason:"No network/serial" },
+  extaudit:   { items:[14,15,16,23],   reason:"External audit" },
+  noportable: { items:[10],            reason:"No portable device" },
+  nooutput:   { items:[20],            reason:"No output to ctrl" },
+  nosession:  { items41:[12], items42:[40,41], reason:"Emergency/No session" },
+  nohmi:      { items:[34],            reason:"No HMI" },
+  noremote:   { items:[37],            reason:"No remote access" },
+};
+function getState() {
+  return {
+    wireless:   document.getElementById('chk-wireless').checked,
+    untrusted:  document.getElementById('chk-untrusted').checked,
+    physkey:    document.getElementById('chk-physkey').checked,
+    noos:       document.getElementById('chk-noos').checked,
+    embedded:   document.getElementById('chk-embedded').checked,
+    nosession:  document.getElementById('chk-nosession').checked,
+    nohmi:      document.getElementById('chk-nohmi').checked,
+    noremote:   document.getElementById('chk-noremote').checked,
+    nocrypto:   document.getElementById('chk-nocrypto').checked,
+    nonetwork:  document.getElementById('chk-nonetwork').checked,
+    extaudit:   document.getElementById('chk-extaudit').checked,
+    noportable: document.getElementById('chk-noportable').checked,
+    nooutput:   document.getElementById('chk-nooutput').checked,
+  };
+}
+function getExempted41(state) {
+  const ex = {};
+  ['wireless','physkey','noos','embedded','nocrypto','nonetwork','extaudit','noportable','nooutput'].forEach(k => {
+    if (state[k]) EXEMPTIONS[k].items.forEach(n => ex[n] = EXEMPTIONS[k].reason);
+  });
+  if (state.nosession) EXEMPTIONS.nosession.items41.forEach(n => ex[n] = EXEMPTIONS.nosession.reason);
+  return ex;
+}
+function getExempted42(state) {
+  const ex = {};
+  ['nohmi','noremote'].forEach(k => {
+    if (state[k]) EXEMPTIONS[k].items.forEach(n => ex[n] = EXEMPTIONS[k].reason);
+  });
+  if (state.nosession) EXEMPTIONS.nosession.items42.forEach(n => ex[n] = EXEMPTIONS.nosession.reason);
+  return ex;
+}
+function renderRow(cap, cls, dotCls, exemptReason) {
+  const row = document.createElement('div'); row.className = 'cap-row ' + cls;
+  const numEl = document.createElement('div'); numEl.className = 'cap-num'; numEl.textContent = cap.n;
+  const body = document.createElement('div'); body.className = 'cap-body';
+  const nameWrap = document.createElement('div'); nameWrap.style.cssText = 'display:flex;align-items:center;flex-wrap:wrap;gap:6px;';
+  const nameEl = document.createElement('div'); nameEl.className = 'cap-name'; nameEl.textContent = cap.name;
+  nameWrap.appendChild(nameEl);
+  if (exemptReason) { const tag = document.createElement('span'); tag.className = 'exempt-reason'; tag.textContent = exemptReason; nameWrap.appendChild(tag); }
+  const descEl = document.createElement('div'); descEl.className = 'cap-desc'; descEl.textContent = cap.desc;
+  body.appendChild(nameWrap); body.appendChild(descEl);
+  const statusEl = document.createElement('div'); statusEl.className = 'cap-status';
+  const refEl = document.createElement('span'); refEl.className = 'cap-ref'; refEl.textContent = cap.ref;
+  statusEl.appendChild(refEl);
+  row.appendChild(numEl); row.appendChild(body); row.appendChild(statusEl);
+  return row;
+}
+function render() {
+  const state = getState();
+  const ex41 = getExempted41(state), ex42 = getExempted42(state), exclude42all = state.untrusted;
+  ['wireless','untrusted','physkey','noos','embedded','nosession','nohmi','noremote','nocrypto','nonetwork','extaudit','noportable','nooutput'].forEach(k => {
+    document.getElementById('card-' + k).classList.toggle('active', state[k]);
+  });
+  const list41 = document.getElementById('list-41'); list41.innerHTML = ''; let req41 = 0;
+  CAPS_41.forEach(cap => {
+    if (ex41[cap.n]) list41.appendChild(renderRow(cap, 'exempted', 'dot-ex', ex41[cap.n]));
+    else { list41.appendChild(renderRow(cap, 'required', 'dot-req', null)); req41++; }
+  });
+  const list42 = document.getElementById('list-42'); list42.innerHTML = '';
+  const tag42 = document.getElementById('tag-42'); let add42 = 0, exIn42 = 0;
+  if (exclude42all) {
+    tag42.className = 'section-tag tag-excl';
+    const notice = document.createElement('div'); notice.className = 'excluded-notice';
+    notice.innerHTML = '<span class="excl-icon">⊘</span> All section 4.2 items excluded — no untrusted network connection';
+    list42.appendChild(notice);
+    CAPS_42.forEach(cap => list42.appendChild(renderRow(cap, 'exempted', 'dot-ex', 'No untrusted network')));
+    exIn42 = 11;
+  } else {
+    tag42.className = 'section-tag tag-add';
+    CAPS_42.forEach(cap => {
+      if (ex42[cap.n]) { list42.appendChild(renderRow(cap, 'exempted', 'dot-ex', ex42[cap.n])); exIn42++; }
+      else { list42.appendChild(renderRow(cap, 'additional', 'dot-add', null)); add42++; }
+    });
+  }
+  const exTotal = Object.keys(ex41).length + exIn42, total = req41 + add42;
+
+  // ── Update header summary (IDs kept for compatibility) ──
+  // These IDs no longer exist in header but kept as data store
+  // ── Update dashboard ──
+  updateDashboard(req41, add42, exTotal, total);
+
+  document.getElementById('count-41').textContent    = req41 + ' of 30 applicable';
+  document.getElementById('count-42').textContent    = add42 + ' of 11 applicable';
+}
+['chk-wireless','chk-untrusted','chk-physkey','chk-noos','chk-embedded',
+ 'chk-nosession','chk-nohmi','chk-noremote','chk-nocrypto',
+ 'chk-nonetwork','chk-extaudit','chk-noportable','chk-nooutput'].forEach(id => {
+  document.getElementById(id).addEventListener('change', render);
+});
+
+// ── Dashboard + Pie Chart ──
+function updateDashboard(req41, add42, exTotal, total) {
+  // Stat cards
+  document.getElementById('sc-req').textContent   = req41;
+  document.getElementById('sc-add').textContent   = add42;
+  document.getElementById('sc-ex').textContent    = exTotal;
+  document.getElementById('sc-total').textContent = total;
+  document.getElementById('sc-req-bar').style.width   = Math.round(req41 / 41 * 100) + '%';
+  document.getElementById('sc-add-bar').style.width   = Math.round(add42 / 41 * 100) + '%';
+  document.getElementById('sc-ex-bar').style.width    = Math.round(exTotal / 41 * 100) + '%';
+  document.getElementById('sc-total-bar').style.width = Math.round(total / 41 * 100) + '%';
+
+  // Legend numbers
+  document.getElementById('leg-req').textContent = req41;
+  document.getElementById('leg-add').textContent = add42;
+  document.getElementById('leg-ex').textContent  = exTotal;
+  document.getElementById('pie-total').textContent = total;
+
+  // Draw pie
+  drawPie(req41, add42, exTotal);
+}
+
+function drawPie(req, add, ex) {
+  const canvas = document.getElementById('pie-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const cx = W / 2, cy = H / 2;
+  const outerR = W / 2 - 6;
+  const innerR = outerR * 0.55;
+  const total = req + add + ex;
+
+  ctx.clearRect(0, 0, W, H);
+
+  const style = getComputedStyle(document.documentElement);
+  const colReq  = style.getPropertyValue('--blue').trim()   || '#0072CE';
+  const colAdd  = style.getPropertyValue('--green').trim()  || '#1A7A4A';
+  const colEx   = style.getPropertyValue('--exempt').trim() || '#8A9BB0';
+  const colBg   = style.getPropertyValue('--surface2').trim() || '#F0F2F6';
+
+  if (total === 0) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, outerR, 0, Math.PI * 2);
+    ctx.arc(cx, cy, innerR, 0, Math.PI * 2, true);
+    ctx.fillStyle = colBg;
+    ctx.fill('evenodd');
+    return;
+  }
+
+  const segments = [
+    { value: req, color: colReq,  gap: 0.015 },
+    { value: add, color: colAdd,  gap: 0.015 },
+    { value: ex,  color: colEx,   gap: 0.015 },
+  ].filter(s => s.value > 0);
+
+  let startAngle = -Math.PI / 2;
+
+  segments.forEach((seg, i) => {
+    const slice = (seg.value / total) * Math.PI * 2;
+    const endAngle = startAngle + slice - seg.gap;
+
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(startAngle + seg.gap / 2) * innerR,
+               cy + Math.sin(startAngle + seg.gap / 2) * innerR);
+    ctx.arc(cx, cy, outerR, startAngle + seg.gap / 2, endAngle);
+    ctx.arc(cx, cy, innerR, endAngle, startAngle + seg.gap / 2, true);
+    ctx.closePath();
+    ctx.fillStyle = seg.color;
+    ctx.globalAlpha = 0.85;
+    ctx.fill();
+
+    // Outer arc highlight
+    ctx.beginPath();
+    ctx.arc(cx, cy, outerR, startAngle + seg.gap / 2, endAngle);
+    ctx.strokeStyle = seg.color;
+    ctx.lineWidth = 2.5;
+    ctx.globalAlpha = 1;
+    ctx.stroke();
+
+    startAngle += slice;
+  });
+
+  ctx.globalAlpha = 1;
+}
+
+// ── Theme ──
+function setTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  document.getElementById('btn-light').classList.toggle('active', theme === 'light');
+  document.getElementById('btn-dark').classList.toggle('active',  theme === 'dark');
+  localStorage.setItem('ur-e27-theme', theme);
+  // Redraw pie with new theme colors
+  setTimeout(render, 50);
+}
+document.getElementById('btn-light').addEventListener('click', () => setTheme('light'));
+document.getElementById('btn-dark').addEventListener('click',  () => setTheme('dark'));
+(function initTheme() {
+  const saved = localStorage.getItem('ur-e27-theme');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  setTheme(saved || (prefersDark ? 'dark' : 'light'));
+})();
+render();
+
+// ── Page switching ──
+document.querySelectorAll('.nav-tab').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    this.classList.add('active');
+    document.getElementById('page-' + this.dataset.page).classList.add('active');
+  });
+});
+
+// ════════════════════════════════════════════════════
+// RISK LEVEL CALCULATOR — IACS Rec. 171
+// Formula: RL = 2 × (Cat + L + P - 4)
+// ════════════════════════════════════════════════════
+
+// Seg button groups
+document.querySelectorAll('.seg-group[data-seg]').forEach(grp => {
+  grp.querySelectorAll('.seg-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      grp.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      calcRL();
+    });
+  });
+});
+document.getElementById('r-name').addEventListener('input', calcRL);
+document.getElementById('btn-save-r').addEventListener('click', saveAssessment);
+document.getElementById('btn-reset-r').addEventListener('click', resetRisk);
+document.getElementById('btn-clear-r').addEventListener('click', clearAssessments);
+
+// Mitigation checkboxes
+document.querySelectorAll('.mit-item').forEach(item => {
+  item.addEventListener('click', function(e) {
+    if (e.target.tagName === 'INPUT') return; // let native checkbox handle
+    const cb = this.querySelector('input[type=checkbox]');
+    cb.checked = !cb.checked;
+    this.classList.toggle('selected', cb.checked);
+    calcRRL();
+  });
+});
+document.querySelectorAll('.mit-item input[type=checkbox]').forEach(cb => {
+  cb.addEventListener('change', function() {
+    this.closest('.mit-item').classList.toggle('selected', this.checked);
+    calcRRL();
+  });
+});
+
+function getSeg(name, def) {
+  const btn = document.querySelector(`.seg-group[data-seg="${name}"] .seg-btn.active`);
+  return btn ? parseInt(btn.dataset.val) : def;
+}
+
+// ── Attack Surface table (§7.2.3) ──
+// Rows = CX1,CX2,CX3  Cols = CY1..CY5
+const AS_TABLE = {
+  1: [1, 2, 3, 4, 5],
+  2: [2, 2, 3, 4, 5],
+  3: [3, 3, 4, 4, 5],
+};
+
+// ── Human Factor table (§7.2.6) ──
+// Rows = AT1..AT5  Cols = US1..US4
+const H_TABLE = {
+  1: [0, 1, 1, 2],
+  2: [1, 1, 2, 2],
+  3: [1, 2, 2, 3],
+  4: [2, 2, 3, 3],
+  5: [2, 3, 3, 4],
+};
+
+// ── Likelihood table (§7.3) ──
+// Rows = AS1..AS5  Cols = H0..H4
+const L_TABLE = {
+  1: [1, 2, 3, 4, 5],
+  2: [2, 3, 4, 5, 6],
+  3: [3, 4, 5, 6, 7],
+  4: [4, 5, 6, 7, 8],
+  5: [5, 6, 7, 8, 9],
+};
+
+function lLabel(l) {
+  if (l <= 4) return 'Low';
+  if (l <= 7) return 'Medium';
+  return 'High';
+}
+
+const RL_CIRCLE_CLS = ['rl-c1','rl-c1','rl-c1','rl-c1','rl-c2','rl-c2','rl-c2','rl-c2','rl-c2','rl-c2','rl-c2','rl-c2','rl-c2','rl-c3','rl-c4'];
+function rlClass(rl) {
+  if (rl <= 3)  return 'rl-c1';
+  if (rl <= 12) return 'rl-c2';
+  if (rl <= 18) return 'rl-c3';
+  return 'rl-c4';
+}
+function treatmentClass(rl) {
+  if (rl <  4) return ['rlt-opt', 'Optional'];
+  if (rl <= 12) return ['rlt-app', 'Appropriate'];
+  return ['rlt-req', 'Required'];
+}
+const TREATMENT_DESC = {
+  rlt_opt: 'RL < 4 — Risk treatment is <strong>optional</strong>. Current safeguards may be sufficient.',
+  rlt_app: '4 ≤ RL ≤ 12 — Risk treatment is <strong>appropriate</strong>. Consider mitigation measures below.',
+  rlt_req: 'RL > 12 — Risk treatment is <strong>required</strong>. Mitigation measures must be implemented.',
+};
+
+let currentRL = 1;
+
+function calcRL() {
+  const cat = getSeg('r-cat', 3);
+  const cx  = getSeg('r-cx',  1);
+  const cy  = getSeg('r-cy',  1);
+  const us  = getSeg('r-us',  1);
+  const at  = getSeg('r-at',  3);
+  const p   = getSeg('r-impact', 3);
+
+  const as = AS_TABLE[cx][cy - 1];
+  const h  = H_TABLE[at][us - 1];
+  const l  = L_TABLE[as][h];
+  const rl = Math.max(1, 2 * (cat + l + p - 4));
+
+  currentRL = rl;
+
+  const sname = document.getElementById('r-name').value.trim() || 'New System';
+  document.getElementById('r-name-out').textContent = sname;
+
+  // Circle
+  const circle = document.getElementById('rl-circle');
+  circle.className = 'rl-circle ' + rlClass(rl);
+  document.getElementById('rl-num').textContent = rl;
+
+  // Formula
+  document.getElementById('rl-formula-val').textContent =
+    `2 × (${cat} + ${l} + ${p} − 4) = ${rl}`;
+
+  // Treatment badge
+  const [tCls, tLabel] = treatmentClass(rl);
+  const tBadge = document.getElementById('rl-treatment-badge');
+  tBadge.className = 'rl-treatment ' + tCls;
+  tBadge.textContent = tLabel;
+
+  // Treatment desc
+  const descKey = tCls.replace('-','_');
+  document.getElementById('rl-treatment-desc').innerHTML = TREATMENT_DESC[descKey] || '';
+
+  // Breakdown
+  document.getElementById('bd-cat').textContent = 'Cat ' + cat;
+  document.getElementById('bd-l').textContent   = l + ' (' + lLabel(l) + ')';
+  document.getElementById('bd-p').textContent   = 'P' + p;
+
+  // Likelihood chain
+  document.getElementById('lk-cx').textContent = 'CX' + cx;
+  document.getElementById('lk-cy').textContent = 'CY' + cy;
+  document.getElementById('lk-as').textContent = 'AS' + as;
+  document.getElementById('lk-us').textContent = 'US' + us;
+  document.getElementById('lk-at').textContent = 'AT' + at;
+  document.getElementById('lk-h').textContent  = 'H' + h;
+  document.getElementById('lk-l').textContent  = `L${l} (${lLabel(l)})`;
+
+  calcRRL();
+
+  window._rData = { sname, cat, cx, cy, us, at, p, as, h, l, rl };
+}
+
+function calcRRL() {
+  const mitItems = document.querySelectorAll('.mit-item');
+  let totalReduce = 0;
+
+  // §8.3: combined bonus replaces individual if checked
+  const comboChecked = document.getElementById('mit-combo').checked;
+  const humanChecked = document.getElementById('mit-human').checked;
+  const orgChecked   = document.getElementById('mit-org').checked;
+  const monitorChecked = document.getElementById('mit-monitor').checked;
+  const hardenChecked  = document.getElementById('mit-harden').checked;
+
+  if (comboChecked) {
+    totalReduce = 9;
+  } else {
+    // Individual stacking (max reduction per type)
+    if (humanChecked)   totalReduce += 1;
+    if (orgChecked)     totalReduce += 3;
+    // Technical: take the higher of the two
+    if (monitorChecked && hardenChecked) totalReduce += 7;
+    else if (hardenChecked)  totalReduce += 7;
+    else if (monitorChecked) totalReduce += 6;
+  }
+
+  const rrl = Math.max(1, currentRL - totalReduce);
+  const [tCls, tLabel] = treatmentClass(rrl);
+  document.getElementById('rrl-display').textContent = `RRL = ${rrl} (${tLabel})`;
+
+  const rrlBox = document.getElementById('rrl-box');
+  rrlBox.className = 'rrl-box ' + (rrl < 4 ? 'rrl-opt' : rrl <= 12 ? 'rrl-app' : 'rrl-req');
+  rrlBox.innerHTML = totalReduce > 0
+    ? `<strong>Residual Risk Level: ${rrl}</strong> &nbsp;(RL ${currentRL} − ${totalReduce} = ${rrl}) &nbsp;—&nbsp; Treatment: <strong>${tLabel}</strong>${rrl <= 1 ? ' &nbsp;<em>Minimum RRL = 1 reached.</em>' : ''}`
+    : 'Select mitigation measures above to calculate the Residual Risk Level (RRL). Minimum RRL = 1.';
+}
+
+const savedAssessments = [];
+function saveAssessment() {
+  calcRL();
+  const r = window._rData;
+  if (!r) return;
+  const mitChecked = [...document.querySelectorAll('.mit-item input:checked')].map(cb => cb.closest('.mit-item').querySelector('.mit-name').textContent);
+  savedAssessments.unshift({ ...r, mitChecked, time: new Date().toLocaleString() });
+  renderSaved();
+}
+function renderSaved() {
+  const list = document.getElementById('saved-list');
+  if (!savedAssessments.length) {
+    list.innerHTML = '<div class="empty-state"><div class="es-icon">📋</div>No assessments saved yet.</div>';
+    return;
+  }
+  list.innerHTML = '';
+  savedAssessments.forEach(r => {
+    const [tCls, tLabel] = treatmentClass(r.rl);
+    const card = document.createElement('div'); card.className = 'saved-card';
+    const badgeCls = tCls === 'rlt-opt' ? 'rlb-opt' : tCls === 'rlt-app' ? 'rlb-app' : 'rlb-req';
+    card.innerHTML = `<div class="saved-top">
+        <span class="saved-name">${r.sname}</span>
+        <span class="rl-badge ${badgeCls}">RL ${r.rl} — ${tLabel}</span>
+      </div>
+      <div class="saved-meta">
+        Cat ${r.cat} &nbsp;·&nbsp; CX${r.cx}/CY${r.cy}→AS${r.as} &nbsp;·&nbsp; US${r.us}/AT${r.at}→H${r.h}→L${r.l}(${lLabel(r.l)}) &nbsp;·&nbsp; P${r.p}
+        ${r.mitChecked.length ? '<br>Mitigations: ' + r.mitChecked.join(', ') : ''}
+        <br><span style="color:var(--text3)">${r.time}</span>
+      </div>`;
+    list.appendChild(card);
+  });
+}
+function clearAssessments() { savedAssessments.length = 0; renderSaved(); }
+function resetRisk() {
+  // Reset seg groups to defaults
+  const defaults = { 'r-cat':'3','r-impact':'3','r-cx':'1','r-cy':'1','r-us':'1','r-at':'3' };
+  Object.entries(defaults).forEach(([seg, val]) => {
+    document.querySelectorAll(`.seg-group[data-seg="${seg}"] .seg-btn`).forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.val === val);
+    });
+  });
+  document.getElementById('r-name').value = '';
+  document.querySelectorAll('.mit-item input[type=checkbox]').forEach(cb => {
+    cb.checked = false; cb.closest('.mit-item').classList.remove('selected');
+  });
+  calcRL();
+}
+
+// ════════════════════════════════════════════════════
+// ASSET INVENTORY — IACS Rec. 190
+// Columns A–V (22 columns)
+// ════════════════════════════════════════════════════
+
+const AI_SHIP_FUNCTIONS = [
+  'Propulsion','Steering','Anchoring and mooring',
+  'Electrical power generation and distribution',
+  'Fire detection and extinguishing systems',
+  'Bilge and ballast systems, loading computer',
+  'Watertight integrity and flooding detection',
+  'Lighting','Any required safety system',
+  'Navigational systems (statutory)','Communication systems (statutory)',
+  'Other - administrative network','Other - crew welfare',
+  'Other - passenger network','Other - boundary','Other'
+];
+const AI_CATEGORIES = ['Cat I','Cat II','Cat III','N/A'];
+
+// Asset rows data store
+let aiRows = [];
+let aiNextId = 1;
+
+function aiMakeRow(data = {}) {
+  return {
+    id: aiNextId++,
+    b: data.b || '', c: data.c || '', d: data.d || '',
+    e: data.e || 'Cat III',
+    f: data.f || '', g: data.g || '', h: data.h || '',
+    i: data.i || '', j: data.j || '', k: data.k || '',
+    l: data.l || '', m: data.m || '', n: data.n || '',
+    o: data.o || '', p: data.p || '', q: data.q || '',
+    r: data.r || '', s: data.s || '', t: data.t || '',
+    u: data.u || false, v: data.v || '',
+  };
+}
+
+function aiRender() {
+  const search = (document.getElementById('ai-search').value || '').toLowerCase();
+  const tbody = document.getElementById('ai-tbody');
+  tbody.innerHTML = '';
+  let count = 0;
+
+  aiRows.forEach((row, idx) => {
+    // Search filter
+    if (search) {
+      const flat = Object.values(row).join(' ').toLowerCase();
+      if (!flat.includes(search)) return;
+    }
+    count++;
+    const tr = document.createElement('tr');
+    tr.dataset.id = row.id;
+
+    const catCls = row.e === 'Cat I' ? 'cat-I' : row.e === 'Cat II' ? 'cat-II' : row.e === 'Cat III' ? 'cat-III' : 'cat-NA';
+
+    tr.innerHTML = `
+      <td class="td-num">${idx + 1}</td>
+      <td>${aiSelectCell('b', row.id, AI_SHIP_FUNCTIONS, row.b)}</td>
+      <td>${aiInputCell('c', row.id, row.c, 120)}</td>
+      <td>${aiInputCell('d', row.id, row.d, 120)}</td>
+      <td style="text-align:center">${aiCatSelect(row.id, row.e)}</td>
+      <td>${aiInputCell('f', row.id, row.f, 110)}</td>
+      <td>${aiInputCell('g', row.id, row.g, 100)}</td>
+      <td>${aiInputCell('h', row.id, row.h, 110)}</td>
+      <td>${aiTextareaCell('i', row.id, row.i, 130)}</td>
+      <td>${aiTextareaCell('j', row.id, row.j, 130)}</td>
+      <td>${aiTextareaCell('k', row.id, row.k, 150)}</td>
+      <td>${aiInputCell('l', row.id, row.l, 130)}</td>
+      <td>${aiInputCell('m', row.id, row.m, 110)}</td>
+      <td>${aiTextareaCell('n', row.id, row.n, 160)}</td>
+      <td>${aiTextareaCell('o', row.id, row.o, 130)}</td>
+      <td>${aiInputCell('p', row.id, row.p, 110)}</td>
+      <td>${aiTextareaCell('q', row.id, row.q, 120)}</td>
+      <td>${aiTextareaCell('r', row.id, row.r, 120)}</td>
+      <td>${aiInputCell('s', row.id, row.s, 120)}</td>
+      <td>${aiInputCell('t', row.id, row.t, 110)}</td>
+      <td style="text-align:center">${aiExclCell(row.id, row.u)}</td>
+      <td>${aiTextareaCell('v', row.id, row.v, 160)}</td>
+      <td class="td-actions">
+        <button class="row-dup" title="Duplicate" data-dup="${row.id}">⧉</button>
+        <button class="row-del" title="Delete" data-del="${row.id}">✕</button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('ai-count').textContent = `${count} / ${aiRows.length} item${aiRows.length !== 1 ? 's' : ''}`;
+
+  // Bind events on newly rendered cells
+  tbody.querySelectorAll('[data-del]').forEach(btn => {
+    btn.addEventListener('click', () => { aiRows = aiRows.filter(r => r.id != btn.dataset.del); aiRender(); });
+  });
+  tbody.querySelectorAll('[data-dup]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const orig = aiRows.find(r => r.id == btn.dataset.dup);
+      if (orig) { const copy = aiMakeRow({...orig}); aiRows.push(copy); aiRender(); }
+    });
+  });
+  tbody.querySelectorAll('.ai-cell-input').forEach(el => {
+    el.addEventListener('change', e => {
+      const [field, id] = e.target.dataset.cell.split(':');
+      const row = aiRows.find(r => r.id == id);
+      if (row) row[field] = e.target.value;
+    });
+  });
+  tbody.querySelectorAll('.ai-cell-select').forEach(el => {
+    el.addEventListener('change', e => {
+      const [field, id] = e.target.dataset.cell.split(':');
+      const row = aiRows.find(r => r.id == id);
+      if (row) { row[field] = e.target.value; aiRender(); }
+    });
+  });
+  tbody.querySelectorAll('.ai-excl-cb').forEach(el => {
+    el.addEventListener('change', e => {
+      const row = aiRows.find(r => r.id == e.target.dataset.excl);
+      if (row) row.u = e.target.checked;
+    });
+  });
+}
+
+function aiInputCell(field, id, val, minW) {
+  const safe = (val||'').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  return `<input class="ai-cell-input" data-cell="${field}:${id}" value="${safe}" style="min-width:${minW}px">`;
+}
+function aiTextareaCell(field, id, val, minW) {
+  const safe = (val||'').replace(/</g,'&lt;');
+  return `<textarea class="ai-cell-input" data-cell="${field}:${id}" rows="2" style="min-width:${minW}px;resize:vertical">${safe}</textarea>`;
+}
+function aiSelectCell(field, id, options, val) {
+  const opts = options.map(o => `<option${o===val?' selected':''}>${o}</option>`).join('');
+  return `<select class="ai-cell-select" data-cell="${field}:${id}" style="min-width:160px">${opts}</select>`;
+}
+function aiCatSelect(id, val) {
+  const opts = AI_CATEGORIES.map(o => `<option${o===val?' selected':''}>${o}</option>`).join('');
+  return `<select class="ai-cell-select" data-cell="e:${id}" style="min-width:72px">${opts}</select>`;
+}
+function aiExclCell(id, checked) {
+  return `<input type="checkbox" class="ai-excl-cb" data-excl="${id}" ${checked?'checked':''}
+    title="Excluded per UR E26 §6" style="width:16px;height:16px;accent-color:var(--red);cursor:pointer">`;
+}
+
+// Sample data from Rec.190 Appendix 2
+const SAMPLE_ROWS = [
+  {b:'Steering',c:'Steering system',d:'Steering control system',e:'Cat III',f:'SCSUSUK',g:'SCS ST01',h:'abc',i:'Op Sys X v1.007',j:"Industry PLC Corp's PLC firmware v2.023",k:'Steer Straight v03',l:'Wheelhouse',m:'Steering Zone',n:'Steering control system providing control of the rudder',o:'VDR',p:'N/A',q:'RS485 (2/2)',r:'Modbus',s:'IP XXX.XXX',t:'Product-by-Product approval',u:false,v:'No update'},
+  {b:'Propulsion',c:'Main Propulsion System',d:'Main Engine Control System (ECS) - Main Unit',e:'Cat III',f:'ABC Machinery',g:'MU-01-LNG',h:'ECS-xxxx-xxxx-xABx',i:'Windows 10 22H2',j:'-',k:'MU-01-LNG v1.0',l:'Engine Room',m:'Propulsion Zone',n:'Control system functions and integrate their subsystems.',o:'VDR, RCS, WIAS',p:'Shore',q:'LAN (2/2), USB (0/4), Serial (1/1)',r:'TCP/IP',s:'192.168.xx.x:xxx',t:'24CYxxx',u:false,v:'No update'},
+  {b:'Propulsion',c:'Main Propulsion System',d:'Main Engine Control System (ECS) - Wheelhouse Panel',e:'Cat III',f:'XYZ Display',g:'TFT10.4TP',h:'ECS-xxxx-xxxx-xABx',i:'Windows 10 22H2',j:'-',k:'TP-WH-LNG v1.0',l:'Wheelhouse',m:'Propulsion Zone',n:'Control panel for main engine located in the wheelhouse',o:'',p:'',q:'LAN (1/2), USB (1/2)',r:'TCP/IP',s:'192.168.xx.x:xxx',t:'24CYxxx',u:false,v:'No update'},
+  {b:'Propulsion',c:'Main Propulsion System',d:'Main Engine Control System (ECS) - Control Room Panel',e:'Cat III',f:'XYZ Display',g:'TFT10.4TP',h:'ECS-xxxx-xxxx-xABx',i:'Windows 10 22H2',j:'-',k:'TP-CR-LNG v1.10',l:'Control Room',m:'Propulsion Zone',n:'Control panel for main engine located in the control room',o:'',p:'',q:'LAN (1/2), USB (1/2)',r:'TCP/IP',s:'192.168.xx.x:xxx',t:'24CYxxx',u:false,v:'2024/08/26 10:05 UTC update SW to v1.05\n2024/09/26 12:35 UTC update SW to v1.10'},
+  {b:'Propulsion',c:'Main Propulsion System',d:'Ethernet Switch',e:'Cat III',f:'DE networks',g:'12mS5G',h:'ECS-xxxx-xxxx-xABx',i:'NA',j:'DE v1.0',k:'NA',l:'Control Room',m:'Propulsion Zone',n:'Managed ethernet switch providing external and internal IP connections',o:'',p:'',q:'LAN (7/12)',r:'TCP/IP',s:'192.168.xx.x:xxx',t:'24CYxxx',u:false,v:'No update'},
+  {b:'Propulsion',c:'Main Propulsion System',d:'Firewall',e:'Cat III',f:'XYZ Firewall',g:'Gate 09',h:'ECS-xxxx-xxxx-xABx',i:'NA',j:'1214',k:'Gate V1.0',l:'Control Room',m:'Propulsion Zone',n:'Firewall controls and monitors incoming/outgoing network traffic based on security rules.',o:'',p:'',q:'LAN (4/5)',r:'TCP/IP',s:'192.168.xx.x:xxx',t:'24CYxxx',u:false,v:'No update'},
+  {b:'Propulsion',c:'Main Propulsion System',d:'Main Engine Remote Control System (RCS) - Main Unit',e:'Cat III',f:'RCS Systems',g:'RCS-001A',h:'RCS01-MU',i:'Windows 10 IoT LTSC 2019',j:'-',k:'RCS-001A v1.0',l:'Control Room',m:'Propulsion Zone',n:'Integrates remote control systems',o:'VDR, ECS, WIAS',p:'-',q:'LAN (2/2), USB (1/4), RS485 (2/2)',r:'TCP/IP, Modbus',s:'192.168.xx.x:xxx',t:'23CYxxx',u:false,v:'No update'},
+  {b:'Watertight integrity and flooding detection',c:'Water level detection and alarm system',d:'Water Ingress Alarm System (WIAS) Alarm Unit',e:'Cat II',f:'SEALEVELSWITCH',g:'SEAAU-B',h:'WIAAU01',i:'SEA WIA v1.0',j:"Industry PLC Corp's PLC firmware v2.055",k:'SEA Alarm v1.0',l:'Wheelhouse',m:'Propulsion Zone',n:'Integrate sensor information and provide alarm when high level events occur.',o:'ECS, RCS, VDR',p:'',q:'LAN (1/1), RS422 (2/2)',r:'TCP/IP, Modbus',s:'192.168.xx.x:xxx',t:'22CYxxx',u:false,v:'No update'},
+  {b:'Navigational systems (statutory)',c:'Navigation',d:'Gyro Compass #1',e:'N/A',f:'North Star',g:'NS-333',h:'54293',i:'N/A',j:'-',k:'Gyro XX v1.0',l:'Steering Stand',m:'Navigation zone',n:'Determine north direction and accurate heading',o:'Repeaters, ECDIS',p:'None',q:'USB, RJ45, serial',r:'NMEA 0183',s:'IP XXX.XXX',t:'ABS, DNV, CCS, NK certificate',u:false,v:'No update'},
+  {b:'Other - boundary',c:'Boundary (between systems)',d:'Boundary Firewall',e:'Cat III',f:'Firewall PDQ',g:'Bound 101',h:'23412',i:'NA',j:'-',k:'Boundary v1.1',l:'Bridge rack (Locked in rack)',m:'External Connection Zone',n:'Ship network access control and malware protection',o:'Navigation System',p:'Shore',q:'USB*1, RJ45*8',r:'HTTPS, SSH',s:'IP XXX.XXX',t:'25CYxxx',u:false,v:'2024/07/01 09:00 UTC update virus database\n2024/07/09 08:00 UTC update software to v1.1'},
+];
+
+document.getElementById('ai-add-row').addEventListener('click', () => {
+  aiRows.push(aiMakeRow()); aiRender();
+  // Scroll to bottom
+  const wrap = document.querySelector('.ai-scroll');
+  if (wrap) wrap.scrollLeft = 0;
+  document.getElementById('ai-table').lastElementChild.lastElementChild?.scrollIntoView({ behavior:'smooth', block:'nearest' });
+});
+
+document.getElementById('ai-import-sample').addEventListener('click', () => {
+  if (aiRows.length > 0 && !confirm('Replace current inventory with Rec.190 Appendix 2 sample data?')) return;
+  aiRows = SAMPLE_ROWS.map(d => aiMakeRow(d));
+  document.getElementById('v-name').value = 'Sample Vessel';
+  document.getElementById('v-imo').value = '9999999';
+  document.getElementById('v-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('v-ver').value = 'Rev.1';
+  aiRender();
+});
+
+document.getElementById('ai-search').addEventListener('input', aiRender);
+
+document.getElementById('ai-clear-all').addEventListener('click', () => {
+  if (confirm('Clear all inventory items?')) { aiRows = []; aiNextId = 1; aiRender(); }
+});
+
+// Export CSV
+document.getElementById('ai-export-csv').addEventListener('click', () => {
+  document.getElementById('export-modal').classList.add('open');
+});
+document.getElementById('modal-cancel').addEventListener('click', () => {
+  document.getElementById('export-modal').classList.remove('open');
+});
+document.getElementById('modal-confirm').addEventListener('click', () => {
+  document.getElementById('export-modal').classList.remove('open');
+  doExportCSV();
+});
+document.getElementById('export-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) e.currentTarget.classList.remove('open');
+});
+
+function doExportCSV() {
+  const vessel = {
+    name: document.getElementById('v-name').value,
+    imo:  document.getElementById('v-imo').value,
+    cls:  document.getElementById('v-class').value,
+    yard: document.getElementById('v-yard').value,
+    date: document.getElementById('v-date').value,
+    ver:  document.getElementById('v-ver').value,
+  };
+  const esc = v => '"' + String(v||'').replace(/"/g,'""') + '"';
+  const lines = [];
+  lines.push(['IACS Rec.190 — Vessel Asset Inventory'].map(esc).join(','));
+  lines.push(['Vessel Name', vessel.name, 'IMO', vessel.imo, 'Class ID', vessel.cls, 'Shipyard', vessel.yard, 'Date', vessel.date, 'Version', vessel.ver].map(esc).join(','));
+  lines.push([]);
+  lines.push(['Col A','Col B','Col C','Col D','Col E','Col F','Col G','Col H','Col I','Col J','Col K','Col L','Col M','Col N','Col O','Col P','Col Q','Col R','Col S','Col T','Col U','Col V'].map(esc).join(','));
+  lines.push(['#','Ship Functions & Systems','System','Equipment','Category (UR E22)','Brand/Manufacturer','Model/Type','Unique Identifier','OS (Version & Patch)','Firmware (Version & Patch)','Software & Version','Location Onboard','Security Zone','Function/Purpose','Connections (In-scope)','Connections (Untrusted)','Physical Interfaces','Protocols','IP/MAC','Certificate','Excluded (E26 §6)','Update Log'].map(esc).join(','));
+  aiRows.forEach((r, i) => {
+    lines.push([i+1,r.b,r.c,r.d,r.e,r.f,r.g,r.h,r.i,r.j,r.k,r.l,r.m,r.n,r.o,r.p,r.q,r.r,r.s,r.t,r.u?'X':'',r.v].map(esc).join(','));
+  });
+  const blob = new Blob(['\uFEFF' + lines.join('\n')], { type:'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url;
+  a.download = `vessel-asset-inventory-${vessel.imo||'export'}-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+}
+
+// Init
+document.getElementById('v-date').value = new Date().toISOString().slice(0,10);
+aiRender();
+
+
+// ════════════════════════════════════════════════════
+// DOCUMENT LIST CHECKING — IACS UR E26
+// ════════════════════════════════════════════════════
+
+// SI = Systems Integrator columns: design, construction, commissioning
+// SO = Shipowner columns: operation, 1stas, as, ss
+// Actions: S=Submit, M=Maintain, D=Demonstrate, ''=N/A
+
+const DOC_ITEMS = [
+  {
+    id: 'd1',
+    name: 'Approved supplier documentation',
+    ref: 'E26 [5]',
+    sub: '',
+    note1: false,
+    // SI: design, construction, commissioning | SO: operation, 1stas, as, ss
+    phases: { design:'', construction:'M', commissioning:'M', operation:'M', '1stas':'', as:'', ss:'' },
+  },
+  {
+    id: 'd2',
+    name: 'Zones and conduit diagram',
+    ref: 'E26 [5.1.1]',
+    sub: '',
+    note1: false,
+    phases: { design:'S', construction:'M', commissioning:'M', operation:'M', '1stas':'', as:'', ss:'' },
+  },
+  {
+    id: 'd3',
+    name: 'Cyber security design description',
+    ref: 'E26 [5.1.2]',
+    sub: '',
+    note1: false,
+    phases: { design:'S', construction:'M', commissioning:'M', operation:'M', '1stas':'', as:'', ss:'' },
+  },
+  {
+    id: 'd4',
+    name: 'Vessel asset inventory',
+    ref: 'E26 [5.1.3]',
+    sub: '',
+    note1: false,
+    phases: { design:'S', construction:'M', commissioning:'M', operation:'M', '1stas':'', as:'', ss:'' },
+  },
+  {
+    id: 'd5',
+    name: 'Risk assessment for the exclusion of CBSs',
+    ref: 'E26 [5.1.4]',
+    sub: 'NOTE 1: If applicable',
+    note1: true,
+    phases: { design:'S', construction:'M', commissioning:'M', operation:'M', '1stas':'', as:'', ss:'' },
+  },
+  {
+    id: 'd6',
+    name: 'Description of compensating countermeasures',
+    ref: 'E26 [5.1.5]',
+    sub: 'NOTE 1: If applicable',
+    note1: true,
+    phases: { design:'S', construction:'M', commissioning:'M', operation:'M', '1stas':'', as:'', ss:'' },
+  },
+  {
+    id: 'd7',
+    name: 'Ship cyber resilience test procedure',
+    ref: 'E26 [5.2.1]',
+    sub: '',
+    note1: false,
+    phases: { design:'', construction:'S', commissioning:'D', operation:'M', '1stas':'', as:'', ss:'D' },
+  },
+  {
+    id: 'd8',
+    name: 'Ship cyber security and resilience program',
+    ref: 'E26 [5.3.1]',
+    sub: 'Includes: Management of change (MoC) [4.1.1.4.4] · Software updates [4.1.1.4.4] · Firewalls [4.2.1.4.4] · Malware protection [4.2.3.4.4] · Access control [4.2.4.4.4] · Confidential information [4.2.4.4.4] · Remote access [4.2.6.4.4] · Mobile/portable devices [4.2.7.4.4] · Detection of security anomalies [4.3.1.4.4] · Verification of security functions [4.3.2.4.4] · Incident response plans [4.4.1.4.4] · Recovery plans [4.5.1.4.4]',
+    note1: false,
+    phases: { design:'', construction:'', commissioning:'', operation:'M', '1stas':'S', as:'D', ss:'' },
+  },
+];
+
+const PHASE_COLS = ['design','construction','commissioning','operation','1stas','as','ss'];
+const PHASE_LABELS = {
+  design:'Design', construction:'Construction', commissioning:'Commissioning',
+  operation:'Operation', '1stas':'1st AS', as:'AS', ss:'SS'
+};
+const PHASE_ROLE = {
+  design:'si', construction:'si', commissioning:'si',
+  operation:'so', '1stas':'so', as:'so', ss:'so'
+};
+const ACTION_CLS = { S:'dpc-submit', M:'dpc-maintain', D:'dpc-demo', '':'dpc-empty' };
+const ACTION_LBL = { S:'Submit', M:'Maintain', D:'Demonstrate', '':' — ' };
+
+let docState = {
+  role: 'all',
+  phase: 'all',
+  checked: {},   // id -> true/false
+  notes: {},     // id -> string
+};
+
+function docPhaseVisible(doc) {
+  // role filter
+  if (docState.role !== 'all') {
+    const hasCols = PHASE_COLS.filter(p => PHASE_ROLE[p] === docState.role && doc.phases[p]);
+    if (hasCols.length === 0) return false;
+  }
+  // phase filter
+  if (docState.phase !== 'all') {
+    if (!doc.phases[docState.phase]) return false;
+  }
+  return true;
+}
+
+function docRequired(doc) {
+  if (docState.phase === 'all') {
+    return Object.values(doc.phases).some(v => v !== '');
+  }
+  return !!doc.phases[docState.phase];
+}
+
+function renderDocList() {
+  const list = document.getElementById('e26-doc-list');
+  list.innerHTML = '';
+
+  const visibleDocs = DOC_ITEMS.filter(d => docPhaseVisible(d));
+
+  if (visibleDocs.length === 0) {
+    list.innerHTML = `<div class="doc-empty-state"><div class="doc-empty-icon">📄</div>No documents required for the selected phase/role combination.</div>`;
+    updateDocProgress([]);
+    return;
+  }
+
+  visibleDocs.forEach(doc => {
+    const isRequired = docRequired(doc);
+    const isChecked  = !!docState.checked[doc.id];
+    const note       = docState.notes[doc.id] || '';
+
+    const item = document.createElement('div');
+    item.className = 'doc-item' + (isChecked ? ' checked' : '') + (!isRequired ? ' not-required' : '');
+    item.id = 'doc-item-' + doc.id;
+
+    // Phase cells
+    let phaseCells = PHASE_COLS.map(ph => {
+      const action = doc.phases[ph] || '';
+      const cls    = ACTION_CLS[action] || 'dpc-empty';
+      const lbl    = ACTION_LBL[action] || ' — ';
+      const activeClass = (docState.phase === ph) ? ' dpc-active' : '';
+      // Dim if role filter excludes this column
+      const dimStyle = (docState.role !== 'all' && PHASE_ROLE[ph] !== docState.role) ? 'opacity:.3;' : '';
+      return `<div class="doc-phase-cell ${cls}${activeClass}" style="${dimStyle}" title="${PHASE_LABELS[ph]}: ${lbl}">${lbl}</div>`;
+    }).join('');
+
+    let phaseHdrs = PHASE_COLS.map(ph => {
+      const activeStyle = docState.phase === ph ? 'color:var(--blue);font-weight:700;' : '';
+      return `<div class="doc-phase-hdr" style="${activeStyle}">${PHASE_LABELS[ph]}</div>`;
+    }).join('');
+
+    // Status badge
+    let badgeHtml = '';
+    if (!isRequired) {
+      badgeHtml = `<span class="doc-status-badge dsb-na">N/A this phase</span>`;
+    } else if (isChecked) {
+      badgeHtml = `<span class="doc-status-badge dsb-done">✓ Done</span>`;
+    } else {
+      badgeHtml = `<span class="doc-status-badge dsb-required">Required</span>`;
+    }
+
+    // Mobile phase summary badges
+    const mobilePhaseBadges = PHASE_COLS
+      .filter(ph => doc.phases[ph])
+      .map(ph => {
+        const action = doc.phases[ph];
+        const cls = ACTION_CLS[action] || 'dpc-empty';
+        return `<span class="doc-phases-mobile-badge ${cls}">${PHASE_LABELS[ph]}: ${ACTION_LBL[action]}</span>`;
+      }).join('');
+
+    item.innerHTML = `
+      <div class="doc-item-header">
+        <div class="doc-check-col" data-docid="${doc.id}" title="Mark as checked">
+          <input type="checkbox" data-docid="${doc.id}" ${isChecked ? 'checked' : ''} ${!isRequired ? 'disabled' : ''}>
+        </div>
+        <div class="doc-info">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <div class="doc-name">${doc.name}</div>
+            ${badgeHtml}
+          </div>
+          <div class="doc-ref">${doc.ref}${doc.note1 ? ' &nbsp;<span style="color:var(--amber);font-size:10px;font-weight:600;">NOTE 1</span>' : ''}</div>
+          ${doc.sub ? `<div class="doc-sub">${doc.sub}</div>` : ''}
+          <div class="doc-phases-mobile">${mobilePhaseBadges}</div>
+        </div>
+        <div class="doc-phases-col">
+          <div class="doc-phases-grid">${phaseHdrs}${phaseCells}</div>
+        </div>
+      </div>
+      <div class="doc-item-progress"><div class="doc-item-prog-fill" style="width:${isChecked && isRequired ? 100 : 0}%"></div></div>
+      <div class="doc-note-row">
+        <textarea class="doc-note-input" rows="1" placeholder="Notes / remarks…" data-noteid="${doc.id}">${note}</textarea>
+      </div>`;
+
+    list.appendChild(item);
+
+    // Checkbox click
+    const cb = item.querySelector(`input[type=checkbox][data-docid="${doc.id}"]`);
+    cb.addEventListener('change', e => {
+      docState.checked[doc.id] = e.target.checked;
+      renderDocList();
+    });
+    // Click on check col (whole left stripe)
+    const col = item.querySelector(`.doc-check-col[data-docid="${doc.id}"]`);
+    col.addEventListener('click', e => {
+      if (e.target === cb) return;
+      if (!isRequired) return;
+      docState.checked[doc.id] = !docState.checked[doc.id];
+      renderDocList();
+    });
+    // Note input
+    const noteInput = item.querySelector(`textarea[data-noteid="${doc.id}"]`);
+    noteInput.addEventListener('input', e => {
+      docState.notes[doc.id] = e.target.value;
+      // Auto-resize
+      e.target.style.height = 'auto';
+      e.target.style.height = e.target.scrollHeight + 'px';
+    });
+    // Auto-resize on render
+    if (note) {
+      setTimeout(() => {
+        noteInput.style.height = 'auto';
+        noteInput.style.height = noteInput.scrollHeight + 'px';
+      }, 0);
+    }
+  });
+
+  updateDocProgress(visibleDocs);
+}
+
+function updateDocProgress(visibleDocs) {
+  const required = visibleDocs.filter(d => docRequired(d));
+  const done     = required.filter(d => docState.checked[d.id]);
+  const total    = required.length;
+  const pct      = total > 0 ? Math.round(done.length / total * 100) : 0;
+  document.getElementById('e26-prog-fill').style.width = pct + '%';
+  document.getElementById('e26-prog-pct').textContent  = pct + '%';
+  document.getElementById('e26-done').textContent      = done.length;
+  document.getElementById('e26-total').textContent     = total;
+  const fill = document.getElementById('e26-prog-fill');
+  fill.style.background = pct === 100 ? 'var(--green)' : pct >= 50 ? 'var(--blue)' : 'var(--amber)';
+}
+
+// Role buttons
+document.getElementById('role-btns').querySelectorAll('.doc-role-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.doc-role-btn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    docState.role = this.dataset.role;
+    renderDocList();
+  });
+});
+
+// Phase buttons
+document.getElementById('phase-btns').querySelectorAll('.doc-phase-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('#phase-btns .doc-phase-btn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    docState.phase = this.dataset.phase;
+    renderDocList();
+  });
+});
+
+document.getElementById('e26-reset-btn').addEventListener('click', () => {
+  if (!confirm('Reset all E26 document checks and notes?')) return;
+  docState.checked = {};
+  docState.notes   = {};
+  renderDocList();
+});
+
+document.getElementById('e26-check-all-btn').addEventListener('click', () => {
+  const visibleDocs = DOC_ITEMS.filter(d => docPhaseVisible(d) && docRequired(d));
+  visibleDocs.forEach(d => { docState.checked[d.id] = true; });
+  renderDocList();
+});
+
+renderDocList();
+
+// ════════════════════════════════════════════════════
+// E27 DOCUMENT LIST CHECKING — IACS UR E27
+// ════════════════════════════════════════════════════
+
+// class: 'approve' | 'info'
+// notes: [] — array of note numbers (1=no type approval, 2=type approved)
+const E27_DOCS = [
+  {
+    id: 'e27-d1',
+    name: 'CBS asset inventory',
+    ref: 'E27 sec.3.1.1',
+    requirements: [
+      { text: 'To be incorporated in Vessel asset inventory', reqRef: 'E26 sec.4.1.1' }
+    ],
+    classAction: 'approve',
+    notes: [1, 2],
+  },
+  {
+    id: 'e27-d2',
+    name: 'Topology diagrams',
+    ref: 'E27 sec.3.1.2',
+    requirements: [
+      { text: 'Enabling System integrator to design security zones and conduits', reqRef: 'E26 sec.4.2.1' }
+    ],
+    classAction: 'approve',
+    notes: [1, 2],
+  },
+  {
+    id: 'e27-d3',
+    name: 'Description of security capabilities',
+    ref: 'E27 sec.3.1.3',
+    requirements: [
+      { text: 'Required security capabilities', reqRef: 'E27 sec.4.1' },
+      { text: 'Additional security capabilities, if applicable', reqRef: 'E27 sec.4.2' },
+    ],
+    classAction: 'approve',
+    notes: [1],
+  },
+  {
+    id: 'e27-d4',
+    name: 'Test procedure for security capabilities',
+    ref: 'E27 sec.3.1.4',
+    requirements: [
+      { text: 'Required security capabilities', reqRef: 'E27 sec.4.1' },
+      { text: 'Additional security capabilities, if applicable', reqRef: 'E27 sec.4.2' },
+    ],
+    classAction: 'approve',
+    notes: [1],
+  },
+  {
+    id: 'e27-d5',
+    name: 'Security configuration guidelines',
+    ref: 'E27 sec.3.1.5',
+    requirements: [
+      { text: 'Network and security configuration settings', reqRef: 'E27 sec.4.1 item 29' },
+    ],
+    classAction: 'info',
+    notes: [1],
+  },
+  {
+    id: 'e27-d6',
+    name: 'Secure development lifecycle',
+    ref: 'E27 sec.3.1.6',
+    requirements: [
+      { text: 'SDLC requirements', reqRef: 'E27 sec.5' },
+    ],
+    classAction: 'approve',
+    notes: [1],
+  },
+  {
+    id: 'e27-d7',
+    name: 'Plans for maintenance and verification',
+    ref: 'E27 sec.3.1.7',
+    requirements: [
+      { text: 'Security functionality verification', reqRef: 'E27 sec.4.1 item 19' },
+    ],
+    classAction: 'info',
+    notes: [1],
+  },
+  {
+    id: 'e27-d8',
+    name: 'Information supporting incident response and recovery plans',
+    ref: 'E27 sec.3.1.8',
+    requirements: [
+      { text: 'Auditable events',                    reqRef: 'E27 sec.4.1 item 13' },
+      { text: 'Deterministic output',                reqRef: 'E27 sec.4.1 item 20' },
+      { text: 'System backup',                       reqRef: 'E27 sec.4.1 item 26' },
+      { text: 'System recovery and reconstitution',  reqRef: 'E27 sec.4.1 item 27' },
+    ],
+    classAction: 'info',
+    notes: [1],
+  },
+  {
+    id: 'e27-d9',
+    name: 'Management of change plan',
+    ref: 'E27 sec.3.1.9',
+    requirements: [
+      { text: 'Management of change process', reqRef: 'E22' },
+    ],
+    classAction: 'info',
+    notes: [1],
+  },
+  {
+    id: 'e27-d10',
+    name: 'Test reports',
+    ref: 'E27 sec.3.1.10',
+    requirements: [
+      { text: 'Configuration of security capabilities and hardening', reqRef: 'E27 sec.3.1.5 and sec.5.7' },
+    ],
+    classAction: 'info',
+    notes: [2],
+  },
+];
+
+const CLASS_ACTION_CLS = { approve: 'dpc-submit', info: 'dpc-maintain' };
+const CLASS_ACTION_LBL = { approve: 'Approve', info: 'Info' };
+
+let e27State = {
+  approval: 'all',  // 'all' | 'no-ta' | 'ta'
+  classAct: 'all',  // 'all' | 'approve' | 'info'
+  checked:  {},
+  notes:    {},
+};
+
+function e27DocVisible(doc) {
+  if (e27State.approval !== 'all') {
+    const noteNeeded = e27State.approval === 'no-ta' ? 1 : 2;
+    if (!doc.notes.includes(noteNeeded)) return false;
+  }
+  if (e27State.classAct !== 'all' && doc.classAction !== e27State.classAct) return false;
+  return true;
+}
+
+function renderE27DocList() {
+  const list = document.getElementById('e27-doc-list');
+  list.innerHTML = '';
+  const visible = E27_DOCS.filter(e27DocVisible);
+
+  if (visible.length === 0) {
+    list.innerHTML = `<div class="doc-empty-state"><div class="doc-empty-icon">📄</div>No documents match the selected filter.</div>`;
+    updateE27Progress([]);
+    return;
+  }
+
+  visible.forEach(doc => {
+    const isChecked = !!e27State.checked[doc.id];
+    const note      = e27State.notes[doc.id] || '';
+
+    const item = document.createElement('div');
+    item.className = 'doc-item' + (isChecked ? ' checked' : '');
+
+    const noteBadges = doc.notes.map(n =>
+      `<span class="doc-status-badge" style="background:var(--amber-bg);color:var(--amber);border-color:var(--amber-border);">Note ${n}</span>`
+    ).join('');
+
+    const classBadge = `<span class="doc-status-badge ${doc.classAction === 'approve' ? 'dpc-submit' : 'dpc-maintain'}" style="padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;border:1px solid;">
+      ${doc.classAction === 'approve' ? '✓ Approve' : 'ℹ Info'}</span>`;
+
+    const statusBadge = isChecked
+      ? `<span class="doc-status-badge dsb-done">✓ Done</span>`
+      : `<span class="doc-status-badge dsb-required">Required</span>`;
+
+    const reqRows = doc.requirements.map(r =>
+      `<div style="display:flex;gap:8px;align-items:baseline;padding:5px 0;border-bottom:1px solid var(--border);">
+        <div style="flex:1;font-size:12px;color:var(--text)">${r.text}</div>
+        <div style="font-size:11px;color:var(--text3);font-family:monospace;white-space:nowrap;">${r.reqRef}</div>
+      </div>`
+    ).join('');
+
+    item.innerHTML = `
+      <div class="doc-item-header">
+        <div class="doc-check-col" data-e27id="${doc.id}" title="Mark as checked">
+          <input type="checkbox" data-e27id="${doc.id}" ${isChecked ? 'checked' : ''}>
+        </div>
+        <div class="doc-info" style="flex:1;">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:5px;">
+            <div class="doc-name">${doc.name}</div>
+            ${statusBadge}
+            ${classBadge}
+            ${noteBadges}
+          </div>
+          <div class="doc-ref">${doc.ref}</div>
+          <div style="margin-top:8px;border-top:1px solid var(--border);padding-top:6px;">
+            <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);margin-bottom:3px;">Requirements</div>
+            ${reqRows}
+          </div>
+        </div>
+        <div class="doc-phases-col" style="min-width:unset;">
+          <span style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);">Class</span>
+          <span class="doc-phase-cell ${CLASS_ACTION_CLS[doc.classAction]}" style="font-size:12px;padding:4px 10px;margin-top:4px;">${CLASS_ACTION_LBL[doc.classAction]}</span>
+        </div>
+      </div>
+      <div class="doc-item-progress"><div class="doc-item-prog-fill" style="width:${isChecked ? 100 : 0}%"></div></div>
+      <div class="doc-note-row">
+        <textarea class="doc-note-input" rows="1" placeholder="Notes / remarks…" data-e27noteid="${doc.id}">${note}</textarea>
+      </div>`;
+
+    list.appendChild(item);
+
+    // Checkbox
+    item.querySelector(`input[data-e27id="${doc.id}"]`).addEventListener('change', e => {
+      e27State.checked[doc.id] = e.target.checked;
+      renderE27DocList();
+    });
+    // Click col
+    item.querySelector(`.doc-check-col[data-e27id="${doc.id}"]`).addEventListener('click', e => {
+      if (e.target.tagName === 'INPUT') return;
+      e27State.checked[doc.id] = !e27State.checked[doc.id];
+      renderE27DocList();
+    });
+    // Note
+    const noteEl = item.querySelector(`textarea[data-e27noteid="${doc.id}"]`);
+    noteEl.addEventListener('input', e => {
+      e27State.notes[doc.id] = e.target.value;
+      e.target.style.height = 'auto';
+      e.target.style.height = e.target.scrollHeight + 'px';
+    });
+    if (note) { setTimeout(() => { noteEl.style.height = 'auto'; noteEl.style.height = noteEl.scrollHeight + 'px'; }, 0); }
+  });
+
+  updateE27Progress(visible);
+}
+
+function updateE27Progress(visible) {
+  const done  = visible.filter(d => e27State.checked[d.id]);
+  const total = visible.length;
+  const pct   = total > 0 ? Math.round(done.length / total * 100) : 0;
+  document.getElementById('e27-prog-fill').style.width = pct + '%';
+  document.getElementById('e27-prog-pct').textContent  = pct + '%';
+  document.getElementById('e27-done').textContent      = done.length;
+  document.getElementById('e27-total').textContent     = total;
+  document.getElementById('e27-prog-fill').style.background =
+    pct === 100 ? 'var(--green)' : pct >= 50 ? 'var(--blue)' : 'var(--amber)';
+}
+
+// E27 filter buttons
+document.getElementById('e27-approval-btns').querySelectorAll('.doc-e27-approval').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.doc-e27-approval').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    e27State.approval = this.dataset.approval;
+    renderE27DocList();
+  });
+});
+document.getElementById('e27-class-btns').querySelectorAll('.doc-e27-class').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.doc-e27-class').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    e27State.classAct = this.dataset.class;
+    renderE27DocList();
+  });
+});
+document.getElementById('e27-reset-btn').addEventListener('click', () => {
+  if (!confirm('Reset all E27 document checks and notes?')) return;
+  e27State.checked = {}; e27State.notes = {};
+  renderE27DocList();
+});
+document.getElementById('e27-check-all-btn').addEventListener('click', () => {
+  E27_DOCS.filter(e27DocVisible).forEach(d => { e27State.checked[d.id] = true; });
+  renderE27DocList();
+});
+
+renderE27DocList();
+
+// ── CBS Exclusion Checklist (UR E27 §6.4) ──
+const EXCL_MAND = ['em1','em2','em3','em4'];
+const EXCL_ADD  = ['ea1','ea2','ea3'];
+
+function updateExclVerdict() {
+  const mandDone = EXCL_MAND.filter(id => document.getElementById(id).checked);
+  const addDone  = EXCL_ADD.filter(id  => document.getElementById(id).checked);
+  const allMand  = mandDone.length === EXCL_MAND.length;
+  const allAdd   = addDone.length  === EXCL_ADD.length;
+  const noneMand = mandDone.length === 0;
+  const noneAll  = mandDone.length === 0 && addDone.length === 0;
+
+  const verdict   = document.getElementById('excl-verdict');
+  const verdictTx = document.getElementById('excl-verdict-text');
+  const badge     = document.getElementById('excl-verdict-badge');
+
+  verdict.className = 'excl-verdict ';
+  if (noneAll) {
+    verdict.className += 'ev-none';
+    verdictTx.innerHTML = 'Check the criteria above to evaluate whether this CBS may be excluded from the scope of UR E27.';
+    badge.style.cssText = 'font-size:11px;padding:3px 10px;border-radius:5px;border:1px solid var(--border);background:var(--surface2);color:var(--text3);';
+    badge.textContent = 'Not assessed';
+  } else if (!allMand && mandDone.length > 0) {
+    verdict.className += 'ev-partial';
+    verdictTx.innerHTML = `<strong>${mandDone.length} of ${EXCL_MAND.length} mandatory criteria met.</strong> All 4 mandatory criteria (a–d) must be satisfied for exclusion to be considered. Criteria not yet met: ${EXCL_MAND.filter(id => !document.getElementById(id).checked).map(id => id.replace('em','').replace('1','a').replace('2','b').replace('3','c').replace('4','d')).join(', ')}.`;
+    badge.style.cssText = 'font-size:11px;padding:3px 10px;border-radius:5px;border:1px solid var(--amber-border);background:var(--amber-bg);color:var(--amber);';
+    badge.textContent = 'Incomplete';
+  } else if (!allMand) {
+    verdict.className += 'ev-fail';
+    verdictTx.innerHTML = `<strong>Mandatory criteria not met.</strong> The CBS cannot be excluded from the scope of UR E27 until all 4 mandatory criteria (a–d) are satisfied.`;
+    badge.style.cssText = 'font-size:11px;padding:3px 10px;border-radius:5px;border:1px solid var(--red-border);background:var(--red-bg);color:var(--red);';
+    badge.textContent = '✕ Cannot exclude';
+  } else if (allMand && !allAdd) {
+    verdict.className += 'ev-mand-ok';
+    verdictTx.innerHTML = `<strong>All mandatory criteria satisfied.</strong> The CBS may be eligible for exclusion. ${addDone.length} of ${EXCL_ADD.length} additional criteria are met. The Classification Society may still require submittal of additional documents. Satisfying all additional criteria strengthens the case for exclusion acceptance.`;
+    badge.style.cssText = 'font-size:11px;padding:3px 10px;border-radius:5px;border:1px solid var(--blue-border);background:var(--blue-bg);color:var(--blue);';
+    badge.textContent = '◑ Mandatory met';
+  } else {
+    verdict.className += 'ev-full';
+    verdictTx.innerHTML = `<strong>All criteria satisfied (${EXCL_MAND.length} mandatory + ${EXCL_ADD.length} additional).</strong> This CBS meets the full acceptance criteria for exclusion from the scope of UR E27. Submit to the Classification Society with rational explanation and evidence for final approval.`;
+    badge.style.cssText = 'font-size:11px;padding:3px 10px;border-radius:5px;border:1px solid var(--green-border);background:var(--green-bg);color:var(--green);';
+    badge.textContent = '✓ All criteria met';
+  }
+}
+
+// Bind checkboxes and item click
+[...EXCL_MAND, ...EXCL_ADD].forEach(id => {
+  const cb   = document.getElementById(id);
+  const item = cb.closest('.excl-item');
+  const isMand = item.dataset.excl === 'mand';
+
+  cb.addEventListener('change', () => {
+    item.classList.toggle('excl-checked-mand', isMand && cb.checked);
+    item.classList.toggle('excl-checked-add',  !isMand && cb.checked);
+    updateExclVerdict();
+  });
+  item.addEventListener('click', e => {
+    if (e.target === cb) return;
+    cb.checked = !cb.checked;
+    item.classList.toggle('excl-checked-mand', isMand && cb.checked);
+    item.classList.toggle('excl-checked-add',  !isMand && cb.checked);
+    updateExclVerdict();
+  });
+});
+
+updateExclVerdict();
+
+// ── Disclaimer dismiss ──
+document.getElementById('disc-close-btn').addEventListener('click', () => {
+  document.getElementById('disclaimer-banner').style.display = 'none';
+  try { localStorage.setItem('rina-disc-dismissed','1'); } catch(e){}
+});
+try { if (localStorage.getItem('rina-disc-dismissed') === '1') document.getElementById('disclaimer-banner').style.display = 'none'; } catch(e){}
+</script>
+
+<!-- ── Footer ── -->
+<footer class="rina-footer">
+  <div style="display:flex;flex-direction:column;gap:6px;flex:1;">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <!-- Cyber mini icon -->
+      <svg width="16" height="18" viewBox="0 0 38 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M19 2 L35 8 L35 22 C35 31 27 38 19 40 C11 38 3 31 3 22 L3 8 Z" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="2"/>
+        <circle cx="19" cy="18" r="3" fill="rgba(255,255,255,.4)"/>
+        <line x1="13" y1="24" x2="19" y2="18" stroke="rgba(255,255,255,.3)" stroke-width="1.2"/>
+        <line x1="25" y1="24" x2="19" y2="18" stroke="rgba(255,255,255,.3)" stroke-width="1.2"/>
+      </svg>
+      <span style="color:rgba(255,255,255,.55);font-weight:500;">IACS Cyber Resilience Reference Tool</span>
+      <span style="color:rgba(255,255,255,.25)">·</span>
+      <span>UR E27 Rev.1 (Sep 2023) · Rec. 171 (2022) · Rec. 190 (Jun 2025)</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-top:4px;border-top:1px solid rgba(255,255,255,.08);">
+      <span style="color:rgba(255,255,255,.7);">
+        ⚠ &nbsp;<strong style="color:rgba(255,255,255,.85);">AI 활용 고지:</strong>
+        이 도구는 AI를 이용하여 작성되었으며, 내용에 오류가 포함되어 있을 수 있습니다.
+        반드시 공식 IACS 원본 문서 및 해당 선급의 요건과 대조하여 확인하시기 바랍니다.
+      </span>
+      <span style="color:rgba(255,255,255,.3)">|</span>
+      <span style="color:rgba(255,255,255,.5);">
+        <strong style="color:rgba(255,255,255,.7);">AI-assisted content notice:</strong>
+        This tool was created with AI assistance and may contain errors.
+        Always verify against official IACS source documents and your Class Society's requirements.
+      </span>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:3px;flex-shrink:0;padding-left:20px;border-left:1px solid rgba(255,255,255,.1);margin-left:16px;">
+    <span style="font-size:12px;font-weight:600;color:rgba(255,255,255,.75);letter-spacing:.03em;">KYU OH CHOI</span>
+    <a href="mailto:choikyuo@gmail.com" style="font-size:10px;color:rgba(255,255,255,.45);text-decoration:none;letter-spacing:.01em;">choikyuo@gmail.com</a>
+    <span style="font-size:10px;color:rgba(255,255,255,.35);">© 2025</span>
+  </div>
+</footer>
+
+</body>
+</html>
