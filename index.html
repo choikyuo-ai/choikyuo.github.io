@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- v2.1-fixed: no _orig patches, full localStorage inline -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -802,6 +803,52 @@
   .excl-item-text { font-size: 12px; color: var(--text2); line-height: 1.55; flex: 1; }
   .excl-item.excl-checked-mand .excl-item-text { color: var(--green); }
   .excl-item.excl-checked-add  .excl-item-text { color: var(--amber); }
+
+  /* Rationale input within exclusion item */
+  .excl-rationale-wrap {
+    margin-top: 7px; padding-top: 7px;
+    border-top: 1px dashed var(--border);
+    display: flex; flex-direction: column; gap: 3px;
+  }
+  .excl-rationale-label {
+    font-size: 10px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .05em; color: var(--text3);
+    display: flex; align-items: center; gap: 5px;
+  }
+  .excl-rationale-label .rat-req { color: var(--red); }
+  .excl-rationale-input {
+    width: 100%; padding: 6px 9px; font-size: 11px; color: var(--text);
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 5px; outline: none; font-family: inherit;
+    resize: none; line-height: 1.5; transition: border-color .12s;
+  }
+  .excl-rationale-input:focus { border-color: var(--blue-border); }
+  .excl-rationale-input.filled { border-color: var(--green-border); background: var(--green-bg); }
+  .excl-item.excl-checked-mand .excl-rationale-input.filled { border-color: var(--green-border); }
+  .excl-item.excl-checked-add  .excl-rationale-input.filled { border-color: var(--amber-border); background: var(--amber-bg); }
+  .excl-char-count { font-size: 10px; color: var(--text3); text-align: right; }
+  .excl-char-count.warn { color: var(--amber); }
+  .excl-char-count.ok   { color: var(--green); }
+
+  /* Export exclusion button */
+  .excl-export-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 12px; font-size: 11px; font-weight: 500;
+    border-radius: var(--radius); border: 1px solid var(--blue-border);
+    background: var(--blue-bg); color: var(--blue); cursor: pointer;
+    transition: background .12s;
+  }
+  .excl-export-btn:hover { background: var(--blue); color: #fff; }
+
+  /* Privacy notice */
+  .privacy-notice {
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 10px 14px; border-radius: var(--radius);
+    background: var(--green-bg); border: 1px solid var(--green-border);
+    font-size: 11px; color: var(--green); line-height: 1.6; margin-top: 10px;
+  }
+  .privacy-notice strong { color: var(--green); }
+  [data-theme="dark"] .privacy-notice { background: #0A1E12; border-color: #1A4A2A; }
 
   .excl-verdict {
     margin: 12px 0 0; padding: 11px 14px; border-radius: var(--radius);
@@ -1820,11 +1867,11 @@
           </div>
           <span class="mit-reduce">RRL −7</span>
         </label>
-        <label class="mit-item" data-reduce="9">
-          <input type="checkbox" id="mit-combo">
+        <label class="mit-item" data-reduce="9" style="cursor:default;opacity:.85;">
+          <input type="checkbox" id="mit-combo" disabled style="cursor:default;accent-color:var(--blue);">
           <div class="mit-text">
-            <div class="mit-name">§8.3 Combined non-technical + technical</div>
-            <div class="mit-desc">At least one non-technical AND at least one technical measure implemented together</div>
+            <div class="mit-name">§8.3 Combination of non-technical + technical <span style="font-size:10px;font-weight:400;color:var(--text3)">(auto-detected)</span></div>
+            <div class="mit-desc">When ≥1 non-technical (§8.1) AND ≥1 technical (§8.2) measure are implemented together, RRL = RL − 9 (fixed). This replaces the individual reductions above — the combination package gives a fixed −9 reduction regardless of which measures are chosen.</div>
           </div>
           <span class="mit-reduce">RRL −9</span>
         </label>
@@ -1852,26 +1899,62 @@
         Criteria to be met for exclusion — all must be satisfied
       </div>
       <div id="excl-mand-list">
-        <label class="excl-item" data-excl="mand" data-id="em1">
+        <div class="excl-item" data-excl="mand" data-id="em1">
           <input type="checkbox" class="mand" id="em1">
-          <span class="excl-item-lbl">a)</span>
-          <span class="excl-item-text">The CBS is <strong>isolated</strong> — has no IP-network connections to other systems or networks.</span>
-        </label>
-        <label class="excl-item" data-excl="mand" data-id="em2">
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:flex-start;gap:8px;">
+              <span class="excl-item-lbl">a)</span>
+              <span class="excl-item-text">The CBS is <strong>isolated</strong> — has no IP-network connections to other systems or networks.</span>
+            </div>
+            <div class="excl-rationale-wrap">
+              <div class="excl-rationale-label">Justification / Rationale <span class="rat-req">*</span> <span style="font-weight:400;color:var(--text3)">(required for Class Audit)</span></div>
+              <textarea class="excl-rationale-input" id="rat-em1" rows="2" placeholder="e.g. The CBS has no network port and is connected only via hardwired analog signal. Confirmed by network diagram Rev.3, Drawing No. XYZ-001."></textarea>
+              <div class="excl-char-count" id="rat-em1-cnt">0 chars</div>
+            </div>
+          </div>
+        </div>
+        <div class="excl-item" data-excl="mand" data-id="em2">
           <input type="checkbox" class="mand" id="em2">
-          <span class="excl-item-lbl">b)</span>
-          <span class="excl-item-text">The CBS has <strong>no accessible physical interface ports</strong>. Unused interfaces are logically disabled. It is not possible to connect unauthorised devices to the CBS.</span>
-        </label>
-        <label class="excl-item" data-excl="mand" data-id="em3">
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:flex-start;gap:8px;">
+              <span class="excl-item-lbl">b)</span>
+              <span class="excl-item-text">The CBS has <strong>no accessible physical interface ports</strong>. Unused interfaces are logically disabled. It is not possible to connect unauthorised devices to the CBS.</span>
+            </div>
+            <div class="excl-rationale-wrap">
+              <div class="excl-rationale-label">Justification / Rationale <span class="rat-req">*</span></div>
+              <textarea class="excl-rationale-input" id="rat-em2" rows="2" placeholder="e.g. USB ports are physically removed. Serial ports are logically disabled in BIOS. Evidence: Manufacturer's security configuration report v2.1."></textarea>
+              <div class="excl-char-count" id="rat-em2-cnt">0 chars</div>
+            </div>
+          </div>
+        </div>
+        <div class="excl-item" data-excl="mand" data-id="em3">
           <input type="checkbox" class="mand" id="em3">
-          <span class="excl-item-lbl">c)</span>
-          <span class="excl-item-text">The CBS is located in areas where <strong>physical access is controlled</strong>.</span>
-        </label>
-        <label class="excl-item" data-excl="mand" data-id="em4">
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:flex-start;gap:8px;">
+              <span class="excl-item-lbl">c)</span>
+              <span class="excl-item-text">The CBS is located in areas where <strong>physical access is controlled</strong>.</span>
+            </div>
+            <div class="excl-rationale-wrap">
+              <div class="excl-rationale-label">Justification / Rationale <span class="rat-req">*</span></div>
+              <textarea class="excl-rationale-input" id="rat-em3" rows="2" placeholder="e.g. Equipment is located in the sealed Engine Control Room (ECR). Access restricted to authorized crew only via keycard (ISM Procedure MP-04)."></textarea>
+              <div class="excl-char-count" id="rat-em3-cnt">0 chars</div>
+            </div>
+          </div>
+        </div>
+        <div class="excl-item" data-excl="mand" data-id="em4">
           <input type="checkbox" class="mand" id="em4">
-          <span class="excl-item-lbl">d)</span>
-          <span class="excl-item-text">The CBS is <strong>not an integrated control system</strong> serving multiple ship functions as specified in the scope of applicability of this UR (see UR E27 §1.3).</span>
-        </label>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:flex-start;gap:8px;">
+              <span class="excl-item-lbl">d)</span>
+              <span class="excl-item-text">The CBS is <strong>not an integrated control system</strong> serving multiple ship functions as specified in the scope of applicability of this UR (see UR E27 §1.3).</span>
+            </div>
+            <div class="excl-rationale-wrap">
+              <div class="excl-rationale-label">Justification / Rationale <span class="rat-req">*</span></div>
+              <textarea class="excl-rationale-input" id="rat-em4" rows="2" placeholder="e.g. This CBS serves only the bilge alarm function. It has no interface to propulsion, steering, or power management systems. Function description: Drawing No. ABC-202."></textarea>
+              <div class="excl-char-count" id="rat-em4-cnt">0 chars</div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1882,31 +1965,64 @@
         Additional criteria for evaluation of risk level acceptability
       </div>
       <div id="excl-add-list">
-        <label class="excl-item" data-excl="add" data-id="ea1">
+        <div class="excl-item" data-excl="add" data-id="ea1">
           <input type="checkbox" class="add" id="ea1">
-          <span class="excl-item-lbl">a)</span>
-          <span class="excl-item-text">The CBS does <strong>not serve ship functions of Category III</strong>.</span>
-        </label>
-        <label class="excl-item" data-excl="add" data-id="ea2">
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:flex-start;gap:8px;">
+              <span class="excl-item-lbl">a)</span>
+              <span class="excl-item-text">The CBS does <strong>not serve ship functions of Category III</strong>.</span>
+            </div>
+            <div class="excl-rationale-wrap">
+              <div class="excl-rationale-label">Justification / Rationale</div>
+              <textarea class="excl-rationale-input" id="rat-ea1" rows="2" placeholder="e.g. Per UR E22, this CBS is classified as Category II. System category confirmed in Vessel Asset Inventory Item No. 12."></textarea>
+              <div class="excl-char-count" id="rat-ea1-cnt">0 chars</div>
+            </div>
+          </div>
+        </div>
+        <div class="excl-item" data-excl="add" data-id="ea2">
           <input type="checkbox" class="add" id="ea2">
-          <span class="excl-item-lbl">b)</span>
-          <span class="excl-item-text"><strong>Known vulnerabilities, threats, potential impacts</strong> deriving from a cyber incident affecting the CBS have been duly considered in the risk assessment.</span>
-        </label>
-        <label class="excl-item" data-excl="add" data-id="ea3">
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:flex-start;gap:8px;">
+              <span class="excl-item-lbl">b)</span>
+              <span class="excl-item-text"><strong>Known vulnerabilities, threats, potential impacts</strong> deriving from a cyber incident affecting the CBS have been duly considered in the risk assessment.</span>
+            </div>
+            <div class="excl-rationale-wrap">
+              <div class="excl-rationale-label">Justification / Rationale</div>
+              <textarea class="excl-rationale-input" id="rat-ea2" rows="2" placeholder="e.g. Risk assessment (Ref: RA-2024-07) identified and evaluated threat scenarios. Residual risk level is within acceptable limits per UR E26 §6.4."></textarea>
+              <div class="excl-char-count" id="rat-ea2-cnt">0 chars</div>
+            </div>
+          </div>
+        </div>
+        <div class="excl-item" data-excl="add" data-id="ea3">
           <input type="checkbox" class="add" id="ea3">
-          <span class="excl-item-lbl">c)</span>
-          <span class="excl-item-text">The <strong>attack surface is minimized</strong>, having considered its complexity, connectivity, physical and logical access points, including wireless access points.</span>
-        </label>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:flex-start;gap:8px;">
+              <span class="excl-item-lbl">c)</span>
+              <span class="excl-item-text">The <strong>attack surface is minimized</strong>, having considered its complexity, connectivity, physical and logical access points, including wireless access points.</span>
+            </div>
+            <div class="excl-rationale-wrap">
+              <div class="excl-rationale-label">Justification / Rationale</div>
+              <textarea class="excl-rationale-input" id="rat-ea3" rows="2" placeholder="e.g. No wireless interfaces. Single hardwired input only. CX1/CY1 (Attack Surface AS1). No remote access. Complexity is minimal (simple threshold comparator)."></textarea>
+              <div class="excl-char-count" id="rat-ea3-cnt">0 chars</div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Verdict -->
+    <!-- Verdict + Export -->
     <div style="padding:0 20px 16px;">
       <div class="excl-verdict ev-none" id="excl-verdict">
         <span class="excl-verdict-icon">○</span>
         <span id="excl-verdict-text">Check the criteria above to evaluate whether this CBS may be excluded from the scope of UR E27.</span>
       </div>
-    </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:10px;">
+        <div style="font-size:11px;color:var(--text3);">
+          <strong style="color:var(--text2);">Rationale fields</strong> are required by the Classification Society as supporting evidence for exclusion acceptance.
+          All data is saved locally in your browser.
+        </div>
+        <button class="excl-export-btn" id="excl-export-btn">⬇ Export Exclusion Record (CSV)</button>
+      </div>
   </div>
 
   <!-- Saved assessments -->
@@ -2127,6 +2243,9 @@
     <div class="modal-body">
       The CSV will include all vessel header information and all inventory rows (columns A–V).<br><br>
       <strong>Note:</strong> If your inventory contains confidential data (IP addresses, protocols, port numbers), ensure access controls are in place per IACS Rec. 190 §5.
+      <div class="privacy-notice" style="margin-top:10px;">
+        🔒 <div><strong>100% Client-side Privacy:</strong> This tool does not transmit any data to any server. All data — including asset inventory, risk assessments, and exclusion records — is processed and stored exclusively within your local browser. No information leaves your device.</div>
+      </div>
     </div>
     <div class="modal-btns">
       <button class="ai-btn" id="modal-cancel">Cancel</button>
@@ -2554,26 +2673,50 @@ function calcRL() {
 }
 
 function calcRRL() {
-  const mitItems = document.querySelectorAll('.mit-item');
-  let totalReduce = 0;
-
-  // §8.3: combined bonus replaces individual if checked
-  const comboChecked = document.getElementById('mit-combo').checked;
-  const humanChecked = document.getElementById('mit-human').checked;
-  const orgChecked   = document.getElementById('mit-org').checked;
+  const humanChecked   = document.getElementById('mit-human').checked;
+  const orgChecked     = document.getElementById('mit-org').checked;
   const monitorChecked = document.getElementById('mit-monitor').checked;
   const hardenChecked  = document.getElementById('mit-harden').checked;
 
-  if (comboChecked) {
+  // Per Rec.171 §8 (exact spec):
+  // §8.1.1 Human-related:       RRL = RL − 1
+  // §8.1.2 Organisational:      RRL = RL − 3
+  // §8.2.1 Technical monitoring: RRL = RL − 6
+  // §8.2.2 Technical hardening:  RRL = RL − 7
+  // §8.3   Combination (≥1 non-technical + ≥1 technical): RRL = RL − 9  (FIXED, not additive)
+  //
+  // When §8.3 applies, the −9 REPLACES all individual reductions (it's the combined package).
+  // If only non-technical or only technical: individual reductions apply separately.
+  // If both types used together: §8.3 applies (−9), regardless of which ones chosen.
+
+  const hasNonTech = humanChecked || orgChecked;
+  const hasTech    = monitorChecked || hardenChecked;
+
+  let totalReduce = 0;
+  let breakdown   = [];
+  let comboActive = false;
+
+  if (hasNonTech && hasTech) {
+    // §8.3 combination: fixed reduction of 9
     totalReduce = 9;
+    comboActive = true;
+    const nonTechList = [humanChecked && '§8.1.1 Human', orgChecked && '§8.1.2 Org'].filter(Boolean).join(', ');
+    const techList    = [monitorChecked && '§8.2.1 Monitoring', hardenChecked && '§8.2.2 Hardening'].filter(Boolean).join(', ');
+    breakdown.push(`Non-technical: ${nonTechList} + Technical: ${techList}`);
   } else {
-    // Individual stacking (max reduction per type)
-    if (humanChecked)   totalReduce += 1;
-    if (orgChecked)     totalReduce += 3;
-    // Technical: take the higher of the two
-    if (monitorChecked && hardenChecked) totalReduce += 7;
-    else if (hardenChecked)  totalReduce += 7;
-    else if (monitorChecked) totalReduce += 6;
+    // Individual measures only
+    if (humanChecked)   { totalReduce += 1; breakdown.push('§8.1.1 Human −1'); }
+    if (orgChecked)     { totalReduce += 3; breakdown.push('§8.1.2 Org −3'); }
+    if (monitorChecked) { totalReduce += 6; breakdown.push('§8.2.1 Monitoring −6'); }
+    if (hardenChecked)  { totalReduce += 7; breakdown.push('§8.2.2 Hardening −7'); }
+  }
+
+  // Update §8.3 combo indicator (visual only, disabled)
+  const comboEl = document.getElementById('mit-combo');
+  if (comboEl) {
+    comboEl.checked = comboActive;
+    const comboItem = comboEl.closest('.mit-item');
+    if (comboItem) comboItem.classList.toggle('selected', comboActive);
   }
 
   const rrl = Math.max(1, currentRL - totalReduce);
@@ -2582,9 +2725,15 @@ function calcRRL() {
 
   const rrlBox = document.getElementById('rrl-box');
   rrlBox.className = 'rrl-box ' + (rrl < 4 ? 'rrl-opt' : rrl <= 12 ? 'rrl-app' : 'rrl-req');
-  rrlBox.innerHTML = totalReduce > 0
-    ? `<strong>Residual Risk Level: ${rrl}</strong> &nbsp;(RL ${currentRL} − ${totalReduce} = ${rrl}) &nbsp;—&nbsp; Treatment: <strong>${tLabel}</strong>${rrl <= 1 ? ' &nbsp;<em>Minimum RRL = 1 reached.</em>' : ''}`
-    : 'Select mitigation measures above to calculate the Residual Risk Level (RRL). Minimum RRL = 1.';
+
+  if (totalReduce > 0) {
+    const breakdownHtml = comboActive
+      ? `§8.3 Combined: ${breakdown[0]} → −9`
+      : breakdown.join(' + ');
+    rrlBox.innerHTML = `<strong>Residual Risk Level: ${rrl}</strong> &nbsp;(RL ${currentRL} − ${totalReduce} = ${rrl}) &nbsp;—&nbsp; Treatment: <strong>${tLabel}</strong>${rrl <= 1 ? ' &nbsp;<em>Minimum RRL = 1 reached.</em>' : ''}<br><span style="font-size:11px;opacity:.8">${breakdownHtml}</span>`;
+  } else {
+    rrlBox.innerHTML = 'Select mitigation measures above to calculate the Residual Risk Level (RRL). Minimum RRL = 1.';
+  }
 }
 
 const savedAssessments = [];
@@ -2619,7 +2768,7 @@ function renderSaved() {
     list.appendChild(card);
   });
 }
-function clearAssessments() { savedAssessments.length = 0; renderSaved(); }
+function clearAssessments() { savedAssessments.length = 0; renderSaved(); try { localStorage.removeItem('iacstool-risk-v1'); } catch(e) {} }
 function resetRisk() {
   // Reset seg groups to defaults
   const defaults = { 'r-cat':'3','r-impact':'3','r-cx':'1','r-cy':'1','r-us':'1','r-at':'3' };
@@ -2735,7 +2884,7 @@ function aiRender() {
     el.addEventListener('change', e => {
       const [field, id] = e.target.dataset.cell.split(':');
       const row = aiRows.find(r => r.id == id);
-      if (row) row[field] = e.target.value;
+      if (row) { row[field] = e.target.value; try { localStorage.setItem('iacstool-ai-v1', JSON.stringify(aiRows)); } catch(ex) {} }
     });
   });
   tbody.querySelectorAll('.ai-cell-select').forEach(el => {
@@ -2748,9 +2897,11 @@ function aiRender() {
   tbody.querySelectorAll('.ai-excl-cb').forEach(el => {
     el.addEventListener('change', e => {
       const row = aiRows.find(r => r.id == e.target.dataset.excl);
-      if (row) row.u = e.target.checked;
+      if (row) { row.u = e.target.checked; try { localStorage.setItem('iacstool-ai-v1', JSON.stringify(aiRows)); } catch(ex) {} }
     });
   });
+  // Save on every render (row added/deleted/duplicated)
+  try { localStorage.setItem('iacstool-ai-v1', JSON.stringify(aiRows)); } catch(ex) {}
 }
 
 function aiInputCell(field, id, val, minW) {
@@ -2841,11 +2992,20 @@ function doExportCSV() {
   lines.push(['IACS Rec.190 — Vessel Asset Inventory'].map(esc).join(','));
   lines.push(['Vessel Name', vessel.name, 'IMO', vessel.imo, 'Class ID', vessel.cls, 'Shipyard', vessel.yard, 'Date', vessel.date, 'Version', vessel.ver].map(esc).join(','));
   lines.push([]);
-  lines.push(['Col A','Col B','Col C','Col D','Col E','Col F','Col G','Col H','Col I','Col J','Col K','Col L','Col M','Col N','Col O','Col P','Col Q','Col R','Col S','Col T','Col U','Col V'].map(esc).join(','));
-  lines.push(['#','Ship Functions & Systems','System','Equipment','Category (UR E22)','Brand/Manufacturer','Model/Type','Unique Identifier','OS (Version & Patch)','Firmware (Version & Patch)','Software & Version','Location Onboard','Security Zone','Function/Purpose','Connections (In-scope)','Connections (Untrusted)','Physical Interfaces','Protocols','IP/MAC','Certificate','Excluded (E26 §6)','Update Log'].map(esc).join(','));
+  lines.push(['Col A','Col B','Col C','Col D','Col E','Col F','Col G','Col H','Col I','Col J','Col K','Col L','Col M','Col N','Col O','Col P','Col Q','Col R','Col S','Col T','Col U','Col U-Rationale (E26 §6.4)','Col V'].map(esc).join(','));
+  lines.push(['#','Ship Functions & Systems','System','Equipment','Category (UR E22)','Brand/Manufacturer','Model/Type','Unique Identifier','OS (Version & Patch)','Firmware (Version & Patch)','Software & Version','Location Onboard','Security Zone','Function/Purpose','Connections (In-scope)','Connections (Untrusted)','Physical Interfaces','Protocols','IP/MAC','Certificate','Excluded (E26 §6)','Exclusion Rationale','Update Log'].map(esc).join(','));
+  const exclRat = (typeof EXCL_ALL !== 'undefined') ? EXCL_ALL.map(function(id) {
+    var cb = document.getElementById(id);
+    var rat = document.getElementById('rat-' + id);
+    return (cb && cb.checked && rat && rat.value) ? '[' + EXCL_META[id].lbl + '] ' + rat.value : '';
+  }).filter(Boolean).join(' | ') : '';
   aiRows.forEach((r, i) => {
-    lines.push([i+1,r.b,r.c,r.d,r.e,r.f,r.g,r.h,r.i,r.j,r.k,r.l,r.m,r.n,r.o,r.p,r.q,r.r,r.s,r.t,r.u?'X':'',r.v].map(esc).join(','));
+    var rat = r.u ? exclRat : '';
+    lines.push([i+1,r.b,r.c,r.d,r.e,r.f,r.g,r.h,r.i,r.j,r.k,r.l,r.m,r.n,r.o,r.p,r.q,r.r,r.s,r.t,r.u?'X':'',rat,r.v].map(esc).join(','));
   });
+  lines.push([]);
+  lines.push(['UR E26 §6.4 Verdict', (document.getElementById('excl-verdict-badge')||{textContent:''}).textContent].map(esc).join(','));
+  lines.push(['Privacy: 100% Client-side — No data transmitted to any server.'].map(esc).join(','));
   const blob = new Blob(['\uFEFF' + lines.join('\n')], { type:'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a'); a.href = url;
@@ -2855,6 +3015,19 @@ function doExportCSV() {
 
 // Init
 document.getElementById('v-date').value = new Date().toISOString().slice(0,10);
+
+// Vessel field auto-save
+['v-name','v-imo','v-class','v-yard','v-date','v-ver'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', () => {
+    try {
+      const d = {};
+      ['v-name','v-imo','v-class','v-yard','v-date','v-ver'].forEach(k => { d[k] = document.getElementById(k).value; });
+      localStorage.setItem('iacstool-vessel-v1', JSON.stringify(d));
+    } catch(e) {}
+  });
+});
+
 aiRender();
 
 
@@ -3086,6 +3259,7 @@ function renderDocList() {
   });
 
   updateDocProgress(visibleDocs);
+  try { localStorage.setItem('iacstool-e26doc-v1', JSON.stringify({ checked: docState.checked, notes: docState.notes })); } catch(e) {}
 }
 
 function updateDocProgress(visibleDocs) {
@@ -3357,6 +3531,7 @@ function renderE27DocList() {
   });
 
   updateE27Progress(visible);
+  try { localStorage.setItem('iacstool-e27doc-v1', JSON.stringify({ checked: e27State.checked, notes: e27State.notes })); } catch(e) {}
 }
 
 function updateE27Progress(visible) {
@@ -3400,16 +3575,42 @@ document.getElementById('e27-check-all-btn').addEventListener('click', () => {
 
 renderE27DocList();
 
-// ── CBS Exclusion Checklist (UR E27 §6.4) ──
+// ── CBS Exclusion Checklist (UR E26 §6.4) ──
 const EXCL_MAND = ['em1','em2','em3','em4'];
 const EXCL_ADD  = ['ea1','ea2','ea3'];
+const EXCL_ALL  = [...EXCL_MAND, ...EXCL_ADD];
+
+const EXCL_META = {
+  em1: { lbl:'a) Isolated — no IP-network connections',           type:'mand' },
+  em2: { lbl:'b) No accessible physical interface ports',         type:'mand' },
+  em3: { lbl:'c) Physical access controlled',                     type:'mand' },
+  em4: { lbl:'d) Not an integrated multi-function control system',type:'mand' },
+  ea1: { lbl:'a) Does not serve Category III functions',          type:'add'  },
+  ea2: { lbl:'b) Known vulnerabilities considered in risk assessment', type:'add' },
+  ea3: { lbl:'c) Attack surface minimized',                       type:'add'  },
+};
+
+// --- Rationale char counter ---
+EXCL_ALL.forEach(id => {
+  const ta  = document.getElementById('rat-' + id);
+  const cnt = document.getElementById('rat-' + id + '-cnt');
+  if (!ta || !cnt) return;
+  function updateCount() {
+    const len = ta.value.length;
+    cnt.textContent = len + ' chars';
+    cnt.className   = 'excl-char-count' + (len === 0 ? '' : len < 30 ? ' warn' : ' ok');
+    ta.classList.toggle('filled', len > 0);
+    saveExclToStorage();
+  }
+  ta.addEventListener('input', () => { ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px'; updateCount(); });
+  updateCount();
+});
 
 function updateExclVerdict() {
   const mandDone = EXCL_MAND.filter(id => document.getElementById(id).checked);
   const addDone  = EXCL_ADD.filter(id  => document.getElementById(id).checked);
   const allMand  = mandDone.length === EXCL_MAND.length;
   const allAdd   = addDone.length  === EXCL_ADD.length;
-  const noneMand = mandDone.length === 0;
   const noneAll  = mandDone.length === 0 && addDone.length === 0;
 
   const verdict   = document.getElementById('excl-verdict');
@@ -3419,53 +3620,184 @@ function updateExclVerdict() {
   verdict.className = 'excl-verdict ';
   if (noneAll) {
     verdict.className += 'ev-none';
-    verdictTx.innerHTML = 'Check the criteria above to evaluate whether this CBS may be excluded from the scope of UR E27.';
+    verdictTx.innerHTML = 'Check the criteria above to evaluate whether this CBS may be excluded from the scope of UR E26.';
     badge.style.cssText = 'font-size:11px;padding:3px 10px;border-radius:5px;border:1px solid var(--border);background:var(--surface2);color:var(--text3);';
     badge.textContent = 'Not assessed';
+  } else if (allMand && !mandDone.length) {
+    verdict.className += 'ev-fail';
+    verdictTx.innerHTML = `<strong>Mandatory criteria not met.</strong> All 4 mandatory criteria (a–d) must be satisfied.`;
+    badge.style.cssText = 'font-size:11px;padding:3px 10px;border-radius:5px;border:1px solid var(--red-border);background:var(--red-bg);color:var(--red);';
+    badge.textContent = '✕ Cannot exclude';
   } else if (!allMand && mandDone.length > 0) {
     verdict.className += 'ev-partial';
-    verdictTx.innerHTML = `<strong>${mandDone.length} of ${EXCL_MAND.length} mandatory criteria met.</strong> All 4 mandatory criteria (a–d) must be satisfied for exclusion to be considered. Criteria not yet met: ${EXCL_MAND.filter(id => !document.getElementById(id).checked).map(id => id.replace('em','').replace('1','a').replace('2','b').replace('3','c').replace('4','d')).join(', ')}.`;
+    verdictTx.innerHTML = `<strong>${mandDone.length} of ${EXCL_MAND.length} mandatory criteria met.</strong> All 4 mandatory criteria (a–d) must be satisfied for exclusion to be considered.`;
     badge.style.cssText = 'font-size:11px;padding:3px 10px;border-radius:5px;border:1px solid var(--amber-border);background:var(--amber-bg);color:var(--amber);';
     badge.textContent = 'Incomplete';
   } else if (!allMand) {
     verdict.className += 'ev-fail';
-    verdictTx.innerHTML = `<strong>Mandatory criteria not met.</strong> The CBS cannot be excluded from the scope of UR E27 until all 4 mandatory criteria (a–d) are satisfied.`;
+    verdictTx.innerHTML = `<strong>Mandatory criteria not met.</strong> All 4 mandatory criteria (a–d) must be satisfied.`;
     badge.style.cssText = 'font-size:11px;padding:3px 10px;border-radius:5px;border:1px solid var(--red-border);background:var(--red-bg);color:var(--red);';
     badge.textContent = '✕ Cannot exclude';
   } else if (allMand && !allAdd) {
     verdict.className += 'ev-mand-ok';
-    verdictTx.innerHTML = `<strong>All mandatory criteria satisfied.</strong> The CBS may be eligible for exclusion. ${addDone.length} of ${EXCL_ADD.length} additional criteria are met. The Classification Society may still require submittal of additional documents. Satisfying all additional criteria strengthens the case for exclusion acceptance.`;
+    verdictTx.innerHTML = `<strong>All mandatory criteria satisfied.</strong> ${addDone.length} of ${EXCL_ADD.length} additional criteria met. The Classification Society may require submittal of additional documents.`;
     badge.style.cssText = 'font-size:11px;padding:3px 10px;border-radius:5px;border:1px solid var(--blue-border);background:var(--blue-bg);color:var(--blue);';
     badge.textContent = '◑ Mandatory met';
   } else {
     verdict.className += 'ev-full';
-    verdictTx.innerHTML = `<strong>All criteria satisfied (${EXCL_MAND.length} mandatory + ${EXCL_ADD.length} additional).</strong> This CBS meets the full acceptance criteria for exclusion from the scope of UR E27. Submit to the Classification Society with rational explanation and evidence for final approval.`;
+    verdictTx.innerHTML = `<strong>All criteria satisfied (${EXCL_MAND.length} mandatory + ${EXCL_ADD.length} additional).</strong> Submit to the Classification Society with rationale records and supporting evidence for final approval.`;
     badge.style.cssText = 'font-size:11px;padding:3px 10px;border-radius:5px;border:1px solid var(--green-border);background:var(--green-bg);color:var(--green);';
     badge.textContent = '✓ All criteria met';
   }
+  saveExclToStorage();
 }
 
-// Bind checkboxes and item click
-[...EXCL_MAND, ...EXCL_ADD].forEach(id => {
+// Bind checkboxes
+EXCL_ALL.forEach(id => {
   const cb   = document.getElementById(id);
   const item = cb.closest('.excl-item');
   const isMand = item.dataset.excl === 'mand';
-
-  cb.addEventListener('change', () => {
+  function sync() {
     item.classList.toggle('excl-checked-mand', isMand && cb.checked);
     item.classList.toggle('excl-checked-add',  !isMand && cb.checked);
     updateExclVerdict();
-  });
+  }
+  cb.addEventListener('change', sync);
   item.addEventListener('click', e => {
-    if (e.target === cb) return;
-    cb.checked = !cb.checked;
-    item.classList.toggle('excl-checked-mand', isMand && cb.checked);
-    item.classList.toggle('excl-checked-add',  !isMand && cb.checked);
-    updateExclVerdict();
+    if (e.target === cb || e.target.tagName === 'TEXTAREA') return;
+    cb.checked = !cb.checked; sync();
   });
 });
 
+// --- Export Exclusion Record as CSV ---
+document.getElementById('excl-export-btn').addEventListener('click', () => {
+  const esc = v => '"' + String(v||'').replace(/"/g,'""') + '"';
+  const sysname = document.getElementById('r-name').value.trim() || 'Unnamed System';
+  const date    = new Date().toISOString().slice(0,10);
+  const mandDone = EXCL_MAND.every(id => document.getElementById(id).checked);
+  const verdict  = document.getElementById('excl-verdict-badge').textContent;
+
+  const lines = [];
+  lines.push([`IACS UR E26 §6.4 — CBS Exclusion Acceptance Criteria Record`].map(esc).join(','));
+  lines.push([`System / CBS Name`, sysname, `Date`, date, `Verdict`, verdict].map(esc).join(','));
+  lines.push([]);
+  lines.push(['Type','Criteria','Satisfied','Justification / Rationale'].map(esc).join(','));
+
+  EXCL_ALL.forEach(id => {
+    const meta  = EXCL_META[id];
+    const cb    = document.getElementById(id);
+    const rat   = document.getElementById('rat-' + id);
+    lines.push([
+      meta.type === 'mand' ? 'Mandatory' : 'Additional',
+      meta.lbl,
+      cb.checked ? 'Yes' : 'No',
+      rat ? rat.value : '',
+    ].map(esc).join(','));
+  });
+
+  lines.push([]);
+  lines.push([`Note: This record is for reference only. Final acceptance of exclusion is subject to Classification Society review.`].map(esc).join(','));
+  lines.push([`Generated by IACS Cyber Resilience Reference Tool | KYU OH CHOI | choikyuo@gmail.com | ${date}`].map(esc).join(','));
+
+  const blob = new Blob(['\uFEFF' + lines.join('\n')], { type:'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a'); a.href = url;
+  a.download = `exclusion-record-${sysname.replace(/\s+/g,'-')}-${date}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+});
+
+// --- LocalStorage persistence for Exclusion ---
+const LS_EXCL = 'iacstool-excl-v1';
+function saveExclToStorage() {
+  try {
+    const data = {};
+    EXCL_ALL.forEach(id => {
+      data['cb_'  + id] = document.getElementById(id).checked;
+      const ta = document.getElementById('rat-' + id);
+      data['rat_' + id] = ta ? ta.value : '';
+    });
+    localStorage.setItem(LS_EXCL, JSON.stringify(data));
+  } catch(e) {}
+}
+function loadExclFromStorage() {
+  try {
+    const raw = localStorage.getItem(LS_EXCL);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    EXCL_ALL.forEach(id => {
+      const cb = document.getElementById(id);
+      if (cb && data['cb_' + id] !== undefined) {
+        cb.checked = data['cb_' + id];
+        const item = cb.closest('.excl-item');
+        const isMand = item.dataset.excl === 'mand';
+        item.classList.toggle('excl-checked-mand', isMand && cb.checked);
+        item.classList.toggle('excl-checked-add',  !isMand && cb.checked);
+      }
+      const ta = document.getElementById('rat-' + id);
+      const cnt= document.getElementById('rat-' + id + '-cnt');
+      if (ta && data['rat_' + id]) {
+        ta.value = data['rat_' + id];
+        ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px';
+        ta.classList.toggle('filled', ta.value.length > 0);
+        if (cnt) { cnt.textContent = ta.value.length + ' chars'; cnt.className = 'excl-char-count' + (ta.value.length < 30 ? ' warn' : ' ok'); }
+      }
+    });
+    updateExclVerdict();
+  } catch(e) {}
+}
+loadExclFromStorage();
 updateExclVerdict();
+
+// ════════════════════════════════════════════════════
+// LOCALSTORAGE PERSISTENCE — ALL MAJOR DATA
+// ════════════════════════════════════════════════════
+const LS_AI      = 'iacstool-ai-v1';
+const LS_VESSEL  = 'iacstool-vessel-v1';
+const LS_E26DOC  = 'iacstool-e26doc-v1';
+const LS_E27DOC  = 'iacstool-e27doc-v1';
+const LS_RISK    = 'iacstool-risk-v1';
+
+function saveAiToStorage()   { try { localStorage.setItem(LS_AI, JSON.stringify(aiRows)); } catch(e) {} }
+function saveVesselToStorage() {
+  try { const d={}; ['v-name','v-imo','v-class','v-yard','v-date','v-ver'].forEach(k=>{d[k]=document.getElementById(k).value;}); localStorage.setItem(LS_VESSEL,JSON.stringify(d)); } catch(e) {}
+}
+function loadAiFromStorage() {
+  try { const raw=localStorage.getItem(LS_AI); if(!raw) return; const rows=JSON.parse(raw); aiRows=rows.map(r=>{aiNextId=Math.max(aiNextId,(r.id||0)+1);return r;}); aiRender(); } catch(e) {}
+}
+function loadVesselFromStorage() {
+  try { const raw=localStorage.getItem(LS_VESSEL); if(!raw) return; const d=JSON.parse(raw); Object.keys(d).forEach(id=>{const el=document.getElementById(id);if(el)el.value=d[id];}); } catch(e) {}
+}
+function saveE26DocToStorage() {
+  try { localStorage.setItem(LS_E26DOC, JSON.stringify({ checked: docState.checked, notes: docState.notes })); } catch(e) {}
+}
+function loadE26DocFromStorage() {
+  try { const raw=localStorage.getItem(LS_E26DOC); if(!raw) return; const d=JSON.parse(raw); docState.checked=d.checked||{}; docState.notes=d.notes||{}; renderDocList(); } catch(e) {}
+}
+function saveE27DocToStorage() {
+  try { localStorage.setItem(LS_E27DOC, JSON.stringify({ checked: e27State.checked, notes: e27State.notes })); } catch(e) {}
+}
+function loadE27DocFromStorage() {
+  try { const raw=localStorage.getItem(LS_E27DOC); if(!raw) return; const d=JSON.parse(raw); e27State.checked=d.checked||{}; e27State.notes=d.notes||{}; renderE27DocList(); } catch(e) {}
+}
+function loadRiskFromStorage() {
+  try { const raw=localStorage.getItem(LS_RISK); if(!raw) return; savedAssessments.push(...JSON.parse(raw)); renderSaved(); } catch(e) {}
+}
+loadVesselFromStorage();
+loadAiFromStorage();
+loadE26DocFromStorage();
+loadE27DocFromStorage();
+loadRiskFromStorage();
+
+// --- Storage status indicator in Asset Inventory toolbar ---
+(function addStorageNotice() {
+  const toolbar = document.querySelector('.ai-toolbar');
+  if (!toolbar) return;
+  const notice = document.createElement('div');
+  notice.className = 'privacy-notice';
+  notice.style.cssText = 'margin-top:8px;width:100%;flex-basis:100%;';
+  notice.innerHTML = `🔒 <div><strong>100% Client-side Privacy:</strong> This tool does not transmit any data to any server. All data (asset inventory, risk assessments, exclusion records, document checklists) is processed and stored exclusively within your local browser via <code>localStorage</code>. No information leaves your device. Data persists across page refreshes and browser restarts.</div>`;
+  toolbar.after(notice);
+})();
 
 // ── Disclaimer dismiss ──
 document.getElementById('disc-close-btn').addEventListener('click', () => {
