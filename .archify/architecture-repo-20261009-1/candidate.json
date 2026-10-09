@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "IACS UR E27 Cyber Resilience Tool",
+    "output": ".archify/architecture-repo-20261009-1/repo-architecture.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/choikyuo-ai/choikyuo.github.io",
+      "provider": "github",
+      "revision": "7c74cb817532d873acdc84afc4c61474bfdddbae"
+    }
+  },
+  "components": [
+    { "id": "assessor", "type": "external", "label": "Assessor", "sublabel": "Web browser", "pos": [40, 370], "size": [120, 64] },
+    { "id": "shell", "type": "frontend", "label": "Page shell", "sublabel": "index.html, nav, theme", "pos": [250, 337], "size": [140, 130],
+      "sources": [{ "path": "index.html", "line": 1456, "end_line": 1462, "label": "nav tabs" }, { "path": "index.html", "line": 2514, "end_line": 2520, "label": "page switching" }] },
+    { "id": "asset", "type": "frontend", "label": "Asset Inventory", "sublabel": "table, vessel info", "pos": [440, 150], "size": [190, 64],
+      "sources": [{ "path": "index.html", "line": 2048, "label": "page-asset" }, { "path": "index.html", "line": 2823, "label": "aiRender" }] },
+    { "id": "checklist", "type": "frontend", "label": "Capability Checklist", "sublabel": "41 + 42 caps, exclusions", "pos": [440, 260], "size": [190, 64],
+      "sources": [{ "path": "index.html", "line": 1464, "label": "page-checklist" }, { "path": "index.html", "line": 2367, "label": "render" }] },
+    { "id": "risk", "type": "frontend", "label": "Risk Level Calculator", "sublabel": "IACS Rec. 171", "pos": [440, 370], "size": [190, 64],
+      "sources": [{ "path": "index.html", "line": 1668, "label": "page-risk" }, { "path": "index.html", "line": 2619, "label": "calcRL" }] },
+    { "id": "doc26", "type": "frontend", "label": "E26 Doc Checklist", "sublabel": "document tracking", "pos": [440, 480], "size": [190, 64],
+      "sources": [{ "path": "index.html", "line": 2123, "label": "page-doclist" }, { "path": "index.html", "line": 3149, "label": "renderDocList" }] },
+    { "id": "doc27", "type": "frontend", "label": "E27 Doc Checklist", "sublabel": "document tracking", "pos": [440, 590], "size": [190, 64],
+      "sources": [{ "path": "index.html", "line": 2182, "label": "page-doclist27" }, { "path": "index.html", "line": 3446, "label": "renderE27DocList" }] },
+    { "id": "storage", "type": "database", "label": "localStorage", "sublabel": "iacstool-* keys", "pos": [740, 150], "size": [150, 504],
+      "sources": [{ "path": "index.html", "line": 3710, "label": "LS_EXCL" }, { "path": "index.html", "line": 3754, "end_line": 3758, "label": "LS_* keys" }] },
+    { "id": "csv", "type": "external", "label": "CSV download", "sublabel": "Blob via anchor", "pos": [440, 40], "size": [190, 64],
+      "sources": [{ "path": "index.html", "line": 2981, "label": "doExportCSV" }, { "path": "index.html", "line": 3009, "label": "Blob" }] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "Browser only, no server", "wraps": ["shell", "asset", "checklist", "risk", "doc26", "doc27", "storage"] }
+  ],
+  "connections": [
+    { "id": "open", "from": "assessor", "to": "shell", "label": "open", "variant": "emphasis" },
+    { "id": "to-asset", "from": "shell", "to": "asset" },
+    { "id": "to-checklist", "from": "shell", "to": "checklist" },
+    { "id": "to-risk", "from": "shell", "to": "risk" },
+    { "id": "to-doc26", "from": "shell", "to": "doc26" },
+    { "id": "to-doc27", "from": "shell", "to": "doc27" },
+    { "id": "asset-store", "from": "asset", "to": "storage", "label": "save", "variant": "dashed" },
+    { "id": "checklist-store", "from": "checklist", "to": "storage", "variant": "dashed" },
+    { "id": "risk-store", "from": "risk", "to": "storage", "variant": "dashed" },
+    { "id": "doc26-store", "from": "doc26", "to": "storage", "variant": "dashed" },
+    { "id": "doc27-store", "from": "doc27", "to": "storage", "variant": "dashed" },
+    { "id": "asset-csv", "from": "asset", "to": "csv", "label": "export", "fromSide": "top", "toSide": "bottom" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "Structure", "items": ["One static index.html, no build or backend", "Tab buttons toggle .page sections"] },
+    { "dot": "emerald", "title": "State", "items": ["Asset, vessel, risk, E26/E27 docs and exclusions saved under iacstool-* keys", "Theme saved under ur-e27-theme"] },
+    { "dot": "rose", "title": "Output", "items": ["Asset and exclusion records export as CSV", "Print button uses window.print()"] }
+  ]
+}

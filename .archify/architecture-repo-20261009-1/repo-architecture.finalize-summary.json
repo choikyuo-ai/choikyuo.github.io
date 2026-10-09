@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "architecture",
+  "quality": "showcase",
+  "specification": {
+    "path": "/home/user/choikyuo.github.io/.archify/architecture-repo-20261009-1/candidate.json",
+    "sha256": "aede46f83e91dd60dd8e5b9a73f07226a08e60476b3eb202e1c6bcdf01a365d8",
+    "bytes": 4534
+  },
+  "artifact": {
+    "path": "/home/user/choikyuo.github.io/.archify/architecture-repo-20261009-1/repo-architecture.html",
+    "sha256": "4f41e6538f5c15699d6011ea7b0c30ca88ba8b22af08103ee62617bce6cbb572",
+    "bytes": 765558
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "pass"
+  },
+  "diagnostics": [],
+  "diagnosticSummary": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "/home/user/choikyuo.github.io/.archify/architecture-repo-20261009-1/repo-architecture.finalize.json",
+    "summaryReceipt": "/home/user/choikyuo.github.io/.archify/architecture-repo-20261009-1/repo-architecture.finalize-summary.json",
+    "browserCheckReceipt": "/home/user/choikyuo.github.io/.archify/architecture-repo-20261009-1/repo-architecture.browser-check.json"
+  },
+  "update": {
+    "status": "unavailable",
+    "installedVersion": null,
+    "availableVersion": null,
+    "releaseNotes": null,
+    "checkedAt": null,
+    "source": null,
+    "noticeRequired": false,
+    "noticeText": null,
+    "reason": "cache-valid"
+  },
+  "visualReview": "not-requested",
+  "durationMs": 5038
+}

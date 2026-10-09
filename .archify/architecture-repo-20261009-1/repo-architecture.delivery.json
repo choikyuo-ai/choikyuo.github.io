@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "06c89a68-91c1-4186-9c3f-b6101e20f1ec",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "/home/user/choikyuo.github.io/.archify/architecture-repo-20261009-1/candidate.json",
+  "output": "/home/user/choikyuo.github.io/.archify/architecture-repo-20261009-1/repo-architecture.html",
+  "specification": {
+    "sha256": "aede46f83e91dd60dd8e5b9a73f07226a08e60476b3eb202e1c6bcdf01a365d8",
+    "bytes": 4534
+  },
+  "artifact": {
+    "sha256": "4f41e6538f5c15699d6011ea7b0c30ca88ba8b22af08103ee62617bce6cbb572",
+    "bytes": 765558
+  }
+}
