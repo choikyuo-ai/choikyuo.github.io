@@ -1,0 +1,2081 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self' blob:; base-uri 'none'; form-action 'none'; object-src 'none'">
+<title>한바다호 항해 브리지</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans+KR:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: full-bleed WebGL sea; bridge-console HUD floats in four corners; dock of controls along the bottom edge. */
+:root {
+  --abyss: #071116;
+  --panel: rgba(8, 19, 24, 0.76);
+  --panel-solid: #0c1b21;
+  --line: rgba(150, 200, 210, 0.16);
+  --line-strong: rgba(150, 200, 210, 0.34);
+  --fg: #e3edef;
+  --muted: #8ba3aa;
+  --dim: #5a7279;
+  --amber: #ffb347;
+  --amber-soft: rgba(255, 179, 71, 0.15);
+  --port: #ff5b4f;
+  --stbd: #3ddc84;
+  --caution: #ffd04a;
+  --f-display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --f-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r: 6px;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--abyss);
+  color: var(--fg);
+  font-family: var(--f-body);
+  font-size: 13px;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+#app { position: relative; width: 100%; height: 100%; overflow: hidden; }
+#scene { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; outline: none; }
+#confetti { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 30; }
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  backdrop-filter: blur(10px) saturate(1.2);
+  -webkit-backdrop-filter: blur(10px) saturate(1.2);
+}
+.eyebrow {
+  font-family: var(--f-display);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.num { font-family: var(--f-display); font-variant-numeric: tabular-nums; font-weight: 600; }
+.hud { position: absolute; z-index: 10; transition: opacity .35s ease, transform .35s ease; }
+.hud-hidden .hud { opacity: 0; pointer-events: none; }
+.hud-hidden .hud.keep { opacity: 1; pointer-events: auto; }
+
+/* ── Top bar ── */
+.top {
+  top: calc(12px + env(safe-area-inset-top, 0px)); left: 16px; right: 16px;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: start; gap: 12px;
+  pointer-events: none;
+}
+.top > * { pointer-events: auto; }
+.ident { padding: 10px 14px; min-width: 0; justify-self: start; }
+.ident h1 {
+  margin: 0; font-family: var(--f-display); font-weight: 700; font-size: 22px; letter-spacing: 0.06em; line-height: 1;
+  display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+}
+.ident h1 small { font-size: 12px; font-weight: 600; letter-spacing: 0.12em; color: var(--amber); }
+.ident p { margin: 6px 0 0; color: var(--muted); font-size: 12px; }
+.tape-wrap { padding: 6px 10px 4px; text-align: center; }
+#tape { display: block; width: min(380px, 40vw); height: 46px; }
+.clock { justify-self: end; padding: 10px 14px; text-align: right; }
+.clock .num { font-size: 20px; line-height: 1; }
+.clock .sub { color: var(--muted); font-size: 11px; margin-top: 4px; font-family: var(--f-display); letter-spacing: .06em; }
+
+/* ── Left instruments ── */
+.inst {
+  left: 16px; top: calc(96px + env(safe-area-inset-top, 0px));
+  width: 236px; padding: 12px 14px 10px;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px;
+}
+.cell { min-width: 0; }
+.cell.wide { grid-column: 1 / -1; }
+.cell .k { font-family: var(--f-display); font-size: 11px; letter-spacing: .1em; color: var(--muted); display: flex; justify-content: space-between; gap: 6px; }
+.cell .k span:last-child { color: var(--dim); letter-spacing: 0; font-family: var(--f-body); font-size: 10.5px; }
+.cell .v { font-family: var(--f-display); font-variant-numeric: tabular-nums; font-weight: 600; font-size: 22px; line-height: 1.1; white-space: nowrap; }
+.cell .v small { font-size: 12px; color: var(--muted); font-weight: 500; margin-left: 2px; }
+.cell .v.sm { font-size: 15px; }
+.rudder-bar { position: relative; height: 8px; margin-top: 5px; background: rgba(255,255,255,.06); border-radius: 4px; overflow: hidden; }
+.rudder-bar i { position: absolute; top: 0; bottom: 0; left: 50%; width: 0; border-radius: 4px; }
+.rudder-bar b { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--fg); left: 50%; opacity: .7; }
+.rudder-bar::after { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: var(--line-strong); }
+
+/* ── Right column ── */
+.right {
+  right: 16px; top: calc(96px + env(safe-area-inset-top, 0px));
+  width: 252px; display: flex; flex-direction: column; gap: 10px;
+  max-height: calc(100% - 96px - var(--dock-h, 96px) - 40px - env(safe-area-inset-bottom, 0px)); overflow-y: auto; scrollbar-width: thin;
+}
+.globe-panel { padding: 10px 12px 12px; }
+.globe-box { position: relative; width: 100%; aspect-ratio: 1; max-width: 100%; margin-top: 4px; }
+#globe { width: 100%; height: 100%; display: block; }
+.globe-fallback { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-size: 12px; text-align: center; padding: 20px; }
+.globe-cap { display: flex; justify-content: space-between; gap: 8px; margin-top: 6px; font-size: 12px; }
+.globe-cap .num { font-size: 14px; }
+.radar-panel { padding: 10px 12px 12px; }
+.radar-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.seg { display: inline-flex; border: 1px solid var(--line-strong); border-radius: 4px; overflow: hidden; }
+.seg button {
+  font: 600 11px/1 var(--f-display); letter-spacing: .06em; color: var(--muted);
+  background: transparent; border: 0; padding: 6px 8px; cursor: pointer; white-space: nowrap;
+}
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--amber-soft); color: var(--amber); }
+#radar { display: block; width: 100%; aspect-ratio: 1; max-width: 100%; margin-top: 8px; }
+.targets { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; }
+.targets li { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 2px 8px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 4px; }
+.targets .tn { font-weight: 600; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.targets .tt { color: var(--muted); font-size: 11px; grid-column: 1; }
+.targets .tv { font-family: var(--f-display); font-variant-numeric: tabular-nums; font-size: 12px; color: var(--muted); grid-column: 1 / -1; display: flex; gap: 10px; flex-wrap: wrap; }
+.pill { font: 600 10.5px/1 var(--f-display); letter-spacing: .08em; padding: 4px 6px; border-radius: 3px; align-self: start; white-space: nowrap; }
+.pill.ok { color: var(--stbd); background: rgba(61,220,132,.12); }
+.pill.warn { color: var(--caution); background: rgba(255,208,74,.13); }
+.pill.alarm { color: #fff; background: var(--port); animation: blink 1s steps(2) infinite; }
+@keyframes blink { 50% { opacity: .55; } }
+
+/* ── Voyage strip ── */
+.voyage {
+  left: 50%; transform: translateX(-50%);
+  bottom: calc(var(--dock-h, 96px) + 22px + env(safe-area-inset-bottom, 0px));
+  width: min(720px, calc(100% - 32px)); padding: 10px 16px 12px;
+}
+.voy-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.voy-head h2 { margin: 0; font-family: var(--f-display); font-weight: 700; font-size: 17px; letter-spacing: .04em; }
+.voy-head h2 span { color: var(--muted); font-weight: 500; }
+.voy-stats { display: flex; gap: 14px; flex-wrap: wrap; color: var(--muted); font-size: 12px; }
+.voy-stats b { color: var(--fg); font-family: var(--f-display); font-variant-numeric: tabular-nums; font-weight: 600; font-size: 14px; margin-left: 4px; }
+.track { position: relative; height: 34px; margin-top: 8px; }
+.track .rail { position: absolute; left: 0; right: 0; top: 9px; height: 3px; background: rgba(255,255,255,.1); border-radius: 2px; }
+.track .done { position: absolute; left: 0; top: 9px; height: 3px; background: var(--amber); border-radius: 2px; width: 0; }
+.track .port { position: absolute; top: 4px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; color: var(--muted); white-space: nowrap; }
+.track .port::before { content: ""; width: 9px; height: 9px; border-radius: 50%; border: 2px solid var(--muted); background: var(--panel-solid); }
+.track .port.passed { color: var(--fg); }
+.track .port.passed::before { border-color: var(--amber); background: var(--amber); }
+.track .port:first-child { transform: none; align-items: flex-start; }
+.track .port.last { transform: translateX(-100%); align-items: flex-end; }
+.track .me { position: absolute; top: 2px; width: 0; height: 0; transform: translateX(-50%); border-left: 7px solid transparent; border-right: 7px solid transparent; border-top: 9px solid var(--fg); filter: drop-shadow(0 0 4px rgba(255,179,71,.7)); }
+.voy-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 6px; }
+
+/* ── Dock ── */
+.dock {
+  left: 16px; right: 16px; bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px 18px;
+  padding: 10px 14px; align-items: flex-end;
+}
+.ctl { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.ctl.cam { min-width: max-content; }
+.ctl label, .ctl .lab { display: flex; justify-content: space-between; gap: 10px; font-family: var(--f-display); font-size: 11px; letter-spacing: .1em; color: var(--muted); text-transform: uppercase; }
+.ctl label b, .ctl .lab b { color: var(--fg); letter-spacing: .02em; font-weight: 600; text-transform: none; font-family: var(--f-body); font-size: 12px; }
+input[type="range"] { -webkit-appearance: none; appearance: none; width: 168px; max-width: 100%; height: 22px; background: transparent; cursor: pointer; }
+input[type="range"]::-webkit-slider-runnable-track { height: 4px; background: rgba(255,255,255,.14); border-radius: 2px; }
+input[type="range"]::-moz-range-track { height: 4px; background: rgba(255,255,255,.14); border-radius: 2px; }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 18px; margin-top: -7px; border-radius: 3px; background: var(--amber); border: 0; }
+input[type="range"]::-moz-range-thumb { width: 14px; height: 18px; border-radius: 3px; background: var(--amber); border: 0; }
+.btn {
+  font: 600 12px/1 var(--f-display); letter-spacing: .08em; text-transform: uppercase;
+  color: var(--fg); background: rgba(255,255,255,.05); border: 1px solid var(--line-strong);
+  border-radius: 4px; padding: 7px 10px; cursor: pointer; white-space: nowrap;
+}
+.btn:hover { border-color: var(--amber); color: var(--amber); }
+.btn.primary { background: var(--amber); border-color: var(--amber); color: #1a1205; }
+.btn.primary:hover { color: #1a1205; filter: brightness(1.08); }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+select {
+  font: 600 12px/1 var(--f-display); color: var(--fg); background: var(--panel-solid);
+  border: 1px solid var(--line-strong); border-radius: 4px; padding: 6px 8px;
+}
+.ap-row { display: flex; gap: 6px; align-items: center; }
+.ap-row .num { font-size: 15px; min-width: 52px; text-align: center; }
+.hint { color: var(--dim); font-size: 11px; font-family: var(--f-display); letter-spacing: .04em; }
+
+/* ── System labels (UR E26 CBS overlay) ── */
+#labels { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
+.sys {
+  position: absolute; left: 0; top: 0; transform: translate(-50%, -100%);
+  display: flex; flex-direction: column; align-items: center; gap: 0;
+  transition: opacity .25s;
+}
+.sys .card { background: var(--panel); border: 1px solid var(--line-strong); border-radius: 4px; padding: 5px 8px; max-width: 190px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.sys .card b { display: block; font-family: var(--f-display); font-size: 12px; letter-spacing: .06em; color: var(--amber); }
+.sys .card span { display: block; font-size: 11px; color: var(--fg); line-height: 1.35; }
+.sys .stem { width: 1px; height: 22px; background: linear-gradient(var(--amber), transparent); }
+.sys .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 0 3px var(--amber-soft); }
+
+/* ── Toast & arrival ── */
+#toast {
+  position: absolute; left: 50%; top: calc(84px + env(safe-area-inset-top, 0px)); transform: translate(-50%, -8px);
+  z-index: 20; padding: 10px 16px; opacity: 0; transition: opacity .3s, transform .3s; pointer-events: none;
+  font-weight: 500; text-align: center; max-width: calc(100% - 32px);
+}
+#toast.show { opacity: 1; transform: translate(-50%, 0); }
+#toast .eyebrow { color: var(--amber); display: block; margin-bottom: 2px; }
+.arrival {
+  position: absolute; z-index: 25; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: min(420px, calc(100% - 32px)); padding: 22px 22px 18px; text-align: left;
+}
+.arrival h3 { margin: 4px 0 8px; font-family: var(--f-display); font-size: 34px; font-weight: 700; letter-spacing: .02em; line-height: 1; text-wrap: balance; }
+.arrival dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 14px 0 18px; }
+.arrival dt { color: var(--muted); font-size: 12px; }
+.arrival dd { margin: 0; font-family: var(--f-display); font-variant-numeric: tabular-nums; font-weight: 600; font-size: 16px; }
+
+#loading { position: absolute; inset: 0; z-index: 40; display: grid; place-items: center; background: var(--abyss); transition: opacity .8s; }
+#loading.done { opacity: 0; pointer-events: none; }
+#loading .eyebrow { color: var(--amber); }
+#loading p { margin: 6px 0 0; color: var(--muted); }
+.note { position: absolute; z-index: 9; right: 16px; bottom: calc(var(--dock-h, 96px) + 22px + env(safe-area-inset-bottom, 0px)); color: var(--dim); font-size: 10.5px; max-width: 220px; text-align: right; }
+
+/* ── Responsive ── */
+@media (max-width: 1180px) {
+  .note { display: none; }
+}
+@media (max-width: 860px) {
+  .inst { width: 200px; grid-template-columns: 1fr; gap: 7px; padding: 10px 12px; }
+  .inst .opt { display: none; }
+  .cell .v { font-size: 18px; }
+  .right { width: 180px; }
+  .radar-panel .targets { display: none; }
+  #tape { width: min(300px, 44vw); }
+}
+@media (max-width: 640px) {
+  body { font-size: 12px; }
+  .top { grid-template-columns: minmax(0,1fr) auto; }
+  .tape-wrap { grid-column: 1 / -1; grid-row: 2; justify-self: center; }
+  #tape { width: calc(100vw - 52px); max-width: 420px; height: 38px; }
+  .ident { padding: 8px 10px; }
+  .ident h1 { font-size: 18px; }
+  .ident p { display: none; }
+  .clock { padding: 8px 10px; }
+  .clock .num { font-size: 16px; }
+  .inst { top: calc(124px + env(safe-area-inset-top, 0px)); width: 132px; padding: 8px 10px; }
+  .right { max-height: calc(100% - 124px - var(--dock-h, 96px) - var(--voy-h, 90px) - 40px); }
+  .inst .cell .k span:last-child { display: none; }
+  .inst .cell:nth-child(n+5) { display: none; }
+  .right { top: calc(124px + env(safe-area-inset-top, 0px)); width: 132px; }
+  .globe-panel { padding: 6px 8px 8px; }
+  .globe-panel .eyebrow, .globe-cap span:first-child { display: none; }
+  .radar-panel { display: none; }
+  .voyage { padding: 8px 12px 10px; }
+  .voy-stats .opt, .voy-actions .hint { display: none; }
+  .dock { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; padding: 8px 10px; }
+  .dock .ctl.cam { grid-column: 1 / -1; min-width: 0; }
+  .dock .ctl.cam .ap-row { flex-wrap: wrap; }
+  input[type="range"] { width: 100%; }
+  .dock .opt, .dock .opt-m, .voy-actions { display: none; }
+  .ctl label, .ctl .lab { font-size: 10px; letter-spacing: .06em; }
+  .ctl label b, .ctl .lab b { font-size: 11px; }
+  .track .port { font-size: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pill.alarm { animation: none; }
+  .hud, #toast, #loading { transition: none; }
+}
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three@0.186.1/build/three.module.js",
+    "three/addons/": "./vendor/three@0.186.1/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<div id="app">
+  <canvas id="scene" tabindex="0" aria-label="컨테이너선 한바다호의 3D 항해 장면"></canvas>
+  <canvas id="confetti" aria-hidden="true"></canvas>
+  <div id="labels" hidden></div>
+
+  <header class="hud top">
+    <div class="ident panel">
+      <h1>M/V HANBADA <small>한바다호</small></h1>
+      <p>컨테이너선 13,000 TEU · LOA 336 m · 폭 48.2 m · 흘수 14.5 m</p>
+    </div>
+    <div class="tape-wrap panel"><canvas id="tape" aria-label="선수방위 테이프"></canvas></div>
+    <div class="clock panel">
+      <div class="num" id="lt">--:--</div>
+      <div class="sub" id="utc">UTC --:--</div>
+    </div>
+  </header>
+
+  <aside class="hud inst panel" aria-label="항해 계기">
+    <div class="cell"><div class="k"><span>HDG</span><span>선수방위</span></div><div class="v" id="v-hdg">---°</div></div>
+    <div class="cell"><div class="k"><span>SOG</span><span>대지속력</span></div><div class="v" id="v-sog">--<small>kn</small></div></div>
+    <div class="cell"><div class="k"><span>ROT</span><span>회두율</span></div><div class="v sm" id="v-rot">--</div></div>
+    <div class="cell"><div class="k"><span>RPM</span><span>주기관</span></div><div class="v sm" id="v-rpm">--</div></div>
+    <div class="cell wide"><div class="k"><span>RUDDER</span><span id="v-rudtxt">타각</span></div>
+      <div class="rudder-bar" aria-hidden="true"><i id="rud-fill"></i><b id="rud-cmd"></b></div></div>
+    <div class="cell opt"><div class="k"><span>ROLL</span><span>횡요</span></div><div class="v sm" id="v-roll">--</div></div>
+    <div class="cell opt"><div class="k"><span>PITCH</span><span>종요</span></div><div class="v sm" id="v-pitch">--</div></div>
+    <div class="cell opt"><div class="k"><span>WIND</span><span>진풍</span></div><div class="v sm" id="v-wind">--</div></div>
+    <div class="cell opt"><div class="k"><span>SEA</span><span>유의파고</span></div><div class="v sm" id="v-sea">--</div></div>
+    <div class="cell wide opt"><div class="k"><span>POSN</span><span id="v-area">해역</span></div><div class="v sm" id="v-pos">--</div></div>
+  </aside>
+
+  <aside class="hud right">
+    <section class="globe-panel panel" aria-label="항로 지구본">
+      <div class="eyebrow">항로 · Route</div>
+      <div class="globe-box"><canvas id="globe"></canvas><div class="globe-fallback" id="globe-fb" hidden>지구본을 불러오지 못했습니다. 위치는 아래 좌표로 표시됩니다.</div></div>
+      <div class="globe-cap"><span>다음</span><span class="num" id="g-next">--</span></div>
+    </section>
+    <section class="radar-panel panel" aria-label="ARPA 레이더">
+      <div class="radar-head">
+        <span class="eyebrow">ARPA · North-up</span>
+        <span class="seg" role="group" aria-label="레이더 거리">
+          <button type="button" data-range="3" aria-pressed="false">3</button>
+          <button type="button" data-range="6" aria-pressed="true">6</button>
+          <button type="button" data-range="12" aria-pressed="false">12 NM</button>
+        </span>
+      </div>
+      <canvas id="radar" aria-label="레이더 화면"></canvas>
+      <ul class="targets" id="targets"></ul>
+    </section>
+  </aside>
+
+  <section class="hud voyage panel" aria-label="항해 진행">
+    <div class="voy-head">
+      <h2>부산 → 로테르담 <span>· 수에즈 경유</span></h2>
+      <div class="voy-stats">
+        <span>항정<b id="s-run">0</b></span>
+        <span>잔여<b id="s-left">0</b></span>
+        <span class="opt">경과<b id="s-elapsed">D+0</b></span>
+        <span>ETA<b id="s-eta">--</b></span>
+      </div>
+    </div>
+    <div class="track" id="track"><div class="rail"></div><div class="done" id="track-done"></div><div class="me" id="track-me"></div></div>
+    <div class="voy-actions">
+      <label class="eyebrow" for="warp">항해 시간 배속</label>
+      <select id="warp">
+        <option value="1">×1 실시간</option>
+        <option value="60" selected>×60 · 1분/초</option>
+        <option value="600">×600 · 10분/초</option>
+        <option value="3600">×3600 · 1시간/초</option>
+        <option value="21600">×21600 · 6시간/초</option>
+      </select>
+      <button class="btn" type="button" id="skip">다음 기항지로</button>
+      <span class="hint">3D 장면은 실시간, 항로·하늘은 배속으로 진행</span>
+    </div>
+  </section>
+
+  <nav class="hud dock panel" aria-label="조선 제어">
+    <div class="ctl">
+      <label for="telegraph">기관 텔레그래프 <b id="tel-txt">항해 전속</b></label>
+      <input type="range" id="telegraph" min="0" max="9" step="1" value="9">
+    </div>
+    <div class="ctl">
+      <label for="helm">타 <b id="helm-txt">자동</b></label>
+      <input type="range" id="helm" min="-35" max="35" step="1" value="0">
+    </div>
+    <div class="ctl opt-m">
+      <span class="lab">조타 모드 <b id="ap-set">---°</b></span>
+      <div class="ap-row">
+        <span class="seg" role="group" aria-label="조타 모드">
+          <button type="button" data-ap="track" aria-pressed="true">항로</button>
+          <button type="button" data-ap="hold" aria-pressed="false">침로</button>
+          <button type="button" data-ap="manual" aria-pressed="false">수동</button>
+        </span>
+        <button class="btn" type="button" id="ap-minus" aria-label="설정 침로 10도 좌현">−10</button>
+        <button class="btn" type="button" id="ap-plus" aria-label="설정 침로 10도 우현">+10</button>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="bft">해상 <b id="bft-txt">보퍼트 4</b></label>
+      <input type="range" id="bft" min="0" max="10" step="1" value="4">
+    </div>
+    <div class="ctl opt-m">
+      <label for="tod">현지 시각 <b id="tod-txt">항해 연동</b></label>
+      <div class="ap-row">
+        <input type="range" id="tod" min="0" max="24" step="0.25" value="16.5">
+        <button class="btn opt" type="button" id="tod-link" aria-pressed="true" title="하늘을 항해 시각과 위치에 맞춤">연동</button>
+      </div>
+    </div>
+    <div class="ctl cam">
+      <span class="lab">카메라 <b class="opt">C · H: HUD · L: 라벨</b></span>
+      <div class="ap-row">
+        <span class="seg" role="group" aria-label="카메라" id="cams">
+          <button type="button" data-cam="orbit" aria-pressed="true">궤도</button>
+          <button type="button" data-cam="bridge" aria-pressed="false">브리지</button>
+          <button type="button" data-cam="chase" aria-pressed="false">추적</button>
+          <button type="button" data-cam="bow" aria-pressed="false">선수</button>
+          <button type="button" data-cam="drone" aria-pressed="false">드론</button>
+          <button type="button" data-cam="wave" aria-pressed="false">수면</button>
+        </span>
+        <button class="btn" type="button" id="lbl-btn" aria-pressed="false" title="UR E26 적용 대상 선내 컴퓨터 기반 시스템 표시">시스템</button>
+        <button class="btn keep-btn" type="button" id="hud-btn" aria-pressed="false">HUD</button>
+      </div>
+    </div>
+  </nav>
+
+  <p class="hud note">선박·항적·주변 선박은 모두 시뮬레이션입니다. 태양 위치는 항해 위치와 시각으로 계산합니다.</p>
+
+  <div id="toast" class="panel" role="status" aria-live="polite"></div>
+
+  <section class="arrival panel" id="arrival" hidden aria-labelledby="arr-title">
+    <span class="eyebrow">입항 · Arrival</span>
+    <h3 id="arr-title">로테르담 입항</h3>
+    <p style="margin:0;color:var(--muted)">마스블락테 컨테이너 터미널 접안 준비. 도선사 승선 완료.</p>
+    <dl>
+      <dt>총 항정</dt><dd id="arr-nm">--</dd>
+      <dt>항해 일수</dt><dd id="arr-days">--</dd>
+      <dt>평균 속력</dt><dd id="arr-avg">--</dd>
+      <dt>경유</dt><dd style="font-family:var(--f-body);font-size:13px;font-weight:500">싱가포르 · 수에즈 운하 · 포트사이드</dd>
+    </dl>
+    <button class="btn primary" type="button" id="restart">부산에서 다시 출항</button>
+  </section>
+
+  <div id="loading" role="status">
+    <div style="text-align:center">
+      <div class="eyebrow">Hull No. HB-13000</div>
+      <p id="load-msg">선체와 화물을 배치하는 중…</p>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { Sky } from 'three/addons/objects/Sky.js';
+
+/* ═══════════════ constants & helpers ═══════════════ */
+const DEG = Math.PI / 180, TAU = Math.PI * 2, NM = 1852, KN = 0.514444, G = 9.81;
+const SH = { L: 336, B: 48.2, D: 29.9, T: 14.5 };
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+const wrapPi = a => Math.atan2(Math.sin(a), Math.cos(a));
+const deg360 = r => ((r / DEG) % 360 + 360) % 360;
+const easeInOut = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const $ = id => document.getElementById(id);
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const small = Math.min(innerWidth, innerHeight) < 700 || /Mobi|Android/i.test(navigator.userAgent);
+
+/* ═══════════════ renderer / scene ═══════════════ */
+const canvas = $('scene');
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+} catch (e) {
+  $('load-msg').textContent = '이 브라우저에서 WebGL을 사용할 수 없어 3D 장면을 표시할 수 없습니다.';
+  throw e;
+}
+renderer.setPixelRatio(Math.min(devicePixelRatio, small ? 1.5 : 1.75));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0.5;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFShadowMap;
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x9fb4bf, 0.00012);
+const camera = new THREE.PerspectiveCamera(48, 1, 0.5, 90000);
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.minDistance = 70;
+controls.maxDistance = 3200;
+controls.maxPolarAngle = Math.PI * 0.497;
+controls.enablePan = false;
+
+/* ═══════════════ canvas textures ═══════════════ */
+function canvasTex(w, h, draw, srgb = true) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  draw(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c);
+  if (srgb) t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 4;
+  return t;
+}
+const glowTex = canvasTex(64, 64, (g, w) => {
+  const r = g.createRadialGradient(w / 2, w / 2, 0, w / 2, w / 2, w / 2);
+  r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(0.18, 'rgba(255,255,255,.85)');
+  r.addColorStop(0.45, 'rgba(255,255,255,.18)'); r.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = r; g.fillRect(0, 0, w, w);
+});
+const puffTex = canvasTex(64, 64, (g, w) => {
+  const r = g.createRadialGradient(w / 2, w / 2, 0, w / 2, w / 2, w / 2);
+  r.addColorStop(0, 'rgba(255,255,255,.9)'); r.addColorStop(0.5, 'rgba(255,255,255,.35)'); r.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = r; g.fillRect(0, 0, w, w);
+});
+const corrugTex = canvasTex(256, 128, (g, w, h) => {
+  g.fillStyle = '#d8d8d8'; g.fillRect(0, 0, w, h);
+  for (let x = 0; x < w; x += 6) { g.fillStyle = 'rgba(0,0,0,.16)'; g.fillRect(x, 0, 2, h); g.fillStyle = 'rgba(255,255,255,.18)'; g.fillRect(x + 3, 0, 1, h); }
+  g.strokeStyle = 'rgba(0,0,0,.35)'; g.lineWidth = 6; g.strokeRect(0, 0, w, h);
+  g.fillStyle = 'rgba(0,0,0,.08)'; g.fillRect(0, h * 0.82, w, h * 0.18);
+});
+function windowsTex(cols, rows, lit, seed) {
+  const r = rng(seed);
+  const make = emissive => canvasTex(512, 512, (g, w, h) => {
+    g.fillStyle = emissive ? '#000' : '#e9ecea'; g.fillRect(0, 0, w, h);
+    const rh = h / rows, cw = w / cols;
+    for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
+      const on = r() < lit;
+      if (emissive) { if (!on) continue; g.fillStyle = r() < 0.2 ? '#bfe3ff' : '#ffd38a'; }
+      else g.fillStyle = '#26323a';
+      g.fillRect(x * cw + cw * 0.18, y * rh + rh * 0.3, cw * 0.64, rh * 0.38);
+    }
+    if (!emissive) { g.fillStyle = 'rgba(0,0,0,.08)'; for (let y = 1; y < rows; y++) g.fillRect(0, y * rh - 2, w, 3); }
+  });
+  return { map: make(false), emissive: make(true) };
+}
+function textTex(lines, w, h, opts = {}) {
+  return canvasTex(w, h, (g) => {
+    g.clearRect(0, 0, w, h);
+    g.fillStyle = opts.color || '#f2f2ee';
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    const fs = opts.size || h * 0.7;
+    lines.forEach((ln, i) => {
+      g.font = `${i ? 600 : 700} ${i ? fs * 0.55 : fs}px "Barlow Condensed", "Arial Narrow", sans-serif`;
+      g.fillText(ln, w / 2, h * (lines.length === 1 ? 0.52 : (i ? 0.78 : 0.34)));
+    });
+  });
+}
+function flagTex() {
+  // 태극기: 3:2, taegeuk tilted along the diagonal, four trigrams
+  return canvasTex(300, 200, (g, w, h) => {
+    g.fillStyle = '#fff'; g.fillRect(0, 0, w, h);
+    const cx = w / 2, cy = h / 2, R = h / 4, a = Math.atan2(h, w);
+    g.save(); g.translate(cx, cy); g.rotate(a);
+    g.fillStyle = '#cd2e3a'; g.beginPath(); g.arc(0, 0, R, Math.PI, 0); g.fill();
+    g.fillStyle = '#0047a0'; g.beginPath(); g.arc(0, 0, R, 0, Math.PI); g.fill();
+    g.fillStyle = '#cd2e3a'; g.beginPath(); g.arc(-R / 2, 0, R / 2, 0, TAU); g.fill();
+    g.fillStyle = '#0047a0'; g.beginPath(); g.arc(R / 2, 0, R / 2, 0, TAU); g.fill();
+    g.restore();
+    const bar = h / 24, len = h / 4, gap = bar / 2;
+    const tri = (ang, pat) => {
+      g.save(); g.translate(cx, cy); g.rotate(ang); g.translate(0, -h * 0.375);
+      g.fillStyle = '#000';
+      pat.forEach((solid, i) => {
+        const y = (i - 1) * (bar + gap) - bar / 2;
+        if (solid) g.fillRect(-len / 2, y, len, bar);
+        else { g.fillRect(-len / 2, y, len / 2 - gap / 2, bar); g.fillRect(gap / 2, y, len / 2 - gap / 2, bar); }
+      });
+      g.restore();
+    };
+    const d = Math.PI / 2 - a;
+    tri(-d, [1, 1, 1]);            // 건 (top-left)
+    tri(d, [0, 1, 0]);             // 감 (top-right)
+    tri(Math.PI + d, [1, 0, 1]);   // 리 (bottom-left)
+    tri(Math.PI - d, [0, 0, 0]);   // 곤 (bottom-right)
+  });
+}
+
+/* ═══════════════ waves (Gerstner, shared CPU/GPU) ═══════════════ */
+const NW = 8, ND = 6;
+const WAVE_L = [190, 132, 96, 71, 52, 37, 26, 17];
+const WAVE_ANG = [0, 0.32, -0.41, 0.66, -0.18, -0.85, 1.05, -1.25];
+const DETAIL_L = [7.5, 5.2, 3.6, 2.4, 1.6, 1.05];
+const DETAIL_ANG = [0.2, -0.7, 1.1, -1.5, 2.2, -2.6];
+const HS = [0.05, 0.1, 0.3, 0.6, 1.0, 2.0, 3.0, 4.0, 5.5, 7.0, 9.0];
+const LPEAK = [12, 14, 20, 30, 45, 62, 82, 105, 130, 155, 180];
+const WIND_MS = [0.2, 1, 2.5, 4.5, 7, 9.5, 12.5, 15.5, 19, 22.5, 26.5];
+const env = { bft: 4, windFrom: 240 * DEG };
+const origin = { x: 0, z: 0 };
+const waves = [];
+{
+  const r = rng(7);
+  for (let i = 0; i < NW + ND; i++) {
+    const det = i >= NW;
+    const L = det ? DETAIL_L[i - NW] : WAVE_L[i];
+    const k = TAU / L;
+    waves.push({ L, k, w: Math.sqrt(G * k), ang: det ? DETAIL_ANG[i - NW] : WAVE_ANG[i], phase0: r() * TAU, A: 0, tA: 0, Q: 1, dx: 1, dz: 0, Phi: 0 });
+  }
+}
+function waveTargets() {
+  const b = env.bft, hs = HS[b], lp = LPEAK[b];
+  let sum = 0;
+  const wts = [];
+  for (let i = 0; i < NW; i++) { const d = Math.log(WAVE_L[i] / lp); const wv = Math.exp(-(d * d) / (2 * 0.42)); wts.push(wv); sum += wv * wv; }
+  const s = Math.sqrt(2 * (hs / 4) ** 2 / Math.max(sum, 1e-6));
+  for (let i = 0; i < NW; i++) waves[i].tA = Math.min(wts[i] * s, waves[i].L / 14);
+  for (let i = NW; i < NW + ND; i++) waves[i].tA = waves[i].L * 0.012 * (0.35 + b * 0.11);
+  const toward = env.windFrom + Math.PI;
+  waves.forEach(w => { const a = toward + w.ang; w.dx = Math.sin(a); w.dz = -Math.cos(a); });
+}
+waveTargets();
+waves.forEach(w => w.A = w.tA);
+function updateWaves(t, dt) {
+  const steep = 0.32 + env.bft * 0.035;
+  for (const w of waves) {
+    w.A += (w.tA - w.A) * Math.min(1, dt * 0.35);
+    w.Q = clamp(steep / (w.k * Math.max(w.A, 1e-4) * NW), 0, 1);
+    const ph = w.phase0 + w.k * (w.dx * origin.x + w.dz * origin.z) - w.w * t;
+    w.Phi = ((ph % TAU) + TAU) % TAU;
+  }
+}
+const _d = { x: 0, y: 0, z: 0 };
+function waveDisp(x, z, distShip) {
+  let dx = 0, dy = 0, dz = 0;
+  const gf = 1 - smooth(5000, 11500, distShip);
+  for (let i = 0; i < NW; i++) {
+    const w = waves[i];
+    const f = gf * clamp(1 - (distShip - w.L * 6) / (w.L * 8), 0, 1);
+    const A = w.A * f; if (A <= 0) continue;
+    const th = w.k * (w.dx * x + w.dz * z) + w.Phi;
+    const c = Math.cos(th), s = Math.sin(th), qa = w.Q * A;
+    dx += qa * w.dx * c; dz += qa * w.dz * c; dy += A * s;
+  }
+  _d.x = dx; _d.y = dy; _d.z = dz; return _d;
+}
+let shipX = 0, shipZ = 0;
+function waveHeight(x, z) {
+  const dist = Math.hypot(x - shipX, z - shipZ);
+  let px = x, pz = z;
+  for (let i = 0; i < 3; i++) { const d = waveDisp(px, pz, dist); px = x - d.x; pz = z - d.z; }
+  return waveDisp(px, pz, dist).y;
+}
+
+/* ═══════════════ ocean ═══════════════ */
+function oceanGeometry(seg, R) {
+  const g = new THREE.PlaneGeometry(2, 2, seg, seg); g.rotateX(-Math.PI / 2);
+  const p = g.attributes.position;
+  const warp = u => Math.sign(u) * (0.025 * Math.abs(u) + 0.975 * Math.pow(Math.abs(u), 2.6)) * R;
+  for (let i = 0; i < p.count; i++) p.setXYZ(i, warp(p.getX(i)), 0, warp(p.getZ(i)));
+  g.computeBoundingSphere(); g.boundingSphere.radius = R * 1.5;
+  return g;
+}
+const waveU = { a: [], b: [] };
+for (let i = 0; i < NW + ND; i++) { waveU.a.push(new THREE.Vector4()); waveU.b.push(new THREE.Vector4()); }
+const oceanUniforms = {
+  uW: { value: waveU.a }, uP: { value: waveU.b },
+  uShip: { value: new THREE.Vector2() },
+  uEnv: { value: null },
+  uSunDir: { value: new THREE.Vector3(0, 1, 0) },
+  uSunColor: { value: new THREE.Color(1, 0.95, 0.85) },
+  uSunI: { value: 1 },
+  uLight: { value: 1 },
+  uDeep: { value: new THREE.Color(0.0, 0.03, 0.05) },
+  uSSS: { value: new THREE.Color(0.02, 0.22, 0.2) },
+  uFog: { value: 0.00009 },
+  uTime: { value: 0 },
+  uFoam: { value: 0.5 },
+  uDetail: { value: 1 },
+  uAmb: { value: new THREE.Color(0, 0, 0) },
+};
+const oceanVS = /* glsl */`
+uniform vec4 uW[${NW + ND}];
+uniform vec4 uP[${NW + ND}];
+uniform vec2 uShip;
+varying vec3 vWorld; varying vec3 vN; varying float vFoam;
+void main() {
+  vec4 wp = modelMatrix * vec4(position, 1.0);
+  vec2 xz = wp.xz;
+  float dist = length(xz - uShip);
+  float gf = 1.0 - smoothstep(5000.0, 11500.0, dist);
+  vec3 d = vec3(0.0); vec3 n = vec3(0.0, 1.0, 0.0);
+  for (int i = 0; i < ${NW}; i++) {
+    vec4 w = uW[i]; vec4 q = uP[i];
+    float f = gf * clamp(1.0 - (dist - q.z * 6.0) / (q.z * 8.0), 0.0, 1.0);
+    float A = w.w * f;
+    if (A <= 0.0) continue;
+    float th = w.z * dot(w.xy, xz) + q.y;
+    float c = cos(th), s = sin(th);
+    float qa = q.x * A, wa = w.z * A;
+    d.x += qa * w.x * c; d.z += qa * w.y * c; d.y += A * s;
+    n.x -= w.x * wa * c; n.z -= w.y * wa * c; n.y -= q.x * wa * s;
+  }
+  wp.xyz += d;
+  vWorld = wp.xyz; vN = n; vFoam = 1.0 - n.y;
+  gl_Position = projectionMatrix * viewMatrix * wp;
+}`;
+const oceanFS = /* glsl */`
+uniform vec4 uW[${NW + ND}];
+uniform vec4 uP[${NW + ND}];
+uniform samplerCube uEnv;
+uniform vec3 uSunDir; uniform vec3 uSunColor; uniform float uSunI; uniform float uLight;
+uniform vec3 uDeep; uniform vec3 uSSS; uniform vec3 uAmb; uniform float uFog; uniform float uTime; uniform float uFoam; uniform float uDetail;
+varying vec3 vWorld; varying vec3 vN; varying float vFoam;
+float hash(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+float noise(vec2 p) { vec2 i = floor(p), f = fract(p); vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y); }
+void main() {
+  vec3 toCam = cameraPosition - vWorld; float camDist = length(toCam); vec3 V = toCam / camDist;
+  vec2 sl = vec2(0.0);
+  float df = uDetail * (1.0 - smoothstep(80.0, 1100.0, camDist));
+  for (int i = ${NW}; i < ${NW + ND}; i++) {
+    vec4 w = uW[i]; vec4 q = uP[i];
+    float th = w.z * dot(w.xy, vWorld.xz) + q.y;
+    sl += w.xy * (w.z * w.w * cos(th));
+  }
+  vec3 N = normalize(vec3(vN.x - sl.x * df, vN.y, vN.z - sl.y * df));
+  N = normalize(mix(N, vec3(0.0, 1.0, 0.0), smoothstep(600.0, 7000.0, camDist) * 0.75));   // tame far-field aliasing
+  vec3 R = reflect(-V, N); R.y = abs(R.y) + 0.02;
+  vec3 refl = textureCube(uEnv, normalize(R)).rgb + uAmb;
+  float fres = 0.02 + 0.98 * pow(1.0 - max(dot(N, V), 0.0), 5.0);
+  float diff = max(dot(N, uSunDir), 0.0) * 0.6 + 0.4;
+  vec3 body = uDeep * diff * uLight;
+  float h = clamp(vWorld.y * 0.18 + 0.4, 0.0, 1.0);
+  float sss = pow(max(dot(-V, uSunDir), 0.0), 3.0) * h * uSunI;
+  body += uSSS * sss * 0.8 + uSSS * h * 0.08 * uLight;
+  vec3 col = mix(body, refl, fres);
+  float spec = pow(max(dot(R, uSunDir), 0.0), 900.0) * mix(30.0, 4.0, smoothstep(300.0, 4000.0, camDist)) + pow(max(dot(R, uSunDir), 0.0), 90.0) * 0.6;
+  col += uSunColor * spec * uSunI;
+  float nz = noise(vWorld.xz * 0.11 + uTime * 0.03) * 0.6 + noise(vWorld.xz * 0.37 - uTime * 0.05) * 0.4;
+  float foam = smoothstep(0.5, 0.9, vFoam + nz * 0.45 - 0.12) * uFoam;
+  foam *= smoothstep(0.2, 0.55, noise(vWorld.xz * 0.9) * noise(vWorld.xz * 2.3 + 3.0) * 1.8 + foam * 0.3);
+  col = mix(col, vec3(0.85, 0.9, 0.92) * (uLight * 0.9 + 0.05) + uSunColor * uSunI * 0.15, clamp(foam, 0.0, 1.0));
+  vec3 fogCol = textureCube(uEnv, normalize(vec3(-V.x, 0.02, -V.z))).rgb;
+  float fogF = 1.0 - exp(-pow(uFog * camDist, 2.0));
+  col = mix(col, fogCol, clamp(fogF, 0.0, 1.0));
+  gl_FragColor = vec4(col, 1.0);
+  #include <tonemapping_fragment>
+  #include <colorspace_fragment>
+}`;
+const ocean = new THREE.Mesh(oceanGeometry(small ? 300 : 460, 30000), new THREE.ShaderMaterial({
+  uniforms: oceanUniforms, vertexShader: oceanVS, fragmentShader: oceanFS,
+}));
+ocean.frustumCulled = false;
+scene.add(ocean);
+
+/* ═══════════════ sky, environment, stars, moon ═══════════════ */
+const sky = new Sky();
+sky.scale.setScalar(45000);
+sky.renderOrder = -1;
+const skyU = sky.material.uniforms;
+skyU.turbidity.value = 4; skyU.rayleigh.value = 1.4; skyU.mieCoefficient.value = 0.005; skyU.mieDirectionalG.value = 0.82;
+skyU.cloudScale.value = 0.00025; skyU.cloudElevation.value = 0.55;
+scene.add(sky);
+const skyScene = new THREE.Scene();
+const cubeRT = new THREE.WebGLCubeRenderTarget(small ? 128 : 256, { type: THREE.HalfFloatType });
+const cubeCam = new THREE.CubeCamera(1, 100000, cubeRT);
+const pmrem = new THREE.PMREMGenerator(renderer);
+let envRT = null;
+oceanUniforms.uEnv.value = cubeRT.texture;
+function captureEnvironment() {
+  const p = sky.parent; skyScene.add(sky); sky.position.set(0, 0, 0);
+  cubeCam.position.set(0, 0, 0);
+  cubeCam.update(renderer, skyScene);
+  envRT = pmrem.fromCubemap(cubeRT.texture, envRT);
+  scene.environment = envRT.texture;
+  p.add(sky);
+}
+const stars = (() => {
+  const n = 1800, pos = new Float32Array(n * 3), r = rng(11);
+  for (let i = 0; i < n; i++) {
+    const u = r(), v = r() * 0.97 + 0.03; const th = u * TAU, y = v; const s = Math.sqrt(1 - y * y);
+    pos.set([Math.cos(th) * s * 20000, y * 20000, Math.sin(th) * s * 20000], i * 3);
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const m = new THREE.PointsMaterial({ size: 1.6, sizeAttenuation: false, color: 0xdfe8ff, transparent: true, opacity: 0, depthWrite: false, fog: false });
+  const pts = new THREE.Points(g, m); pts.frustumCulled = false; scene.add(pts); return pts;
+})();
+const moon = new THREE.Sprite(new THREE.SpriteMaterial({ map: canvasTex(128, 128, (g, w) => {
+  const r = g.createRadialGradient(w / 2, w / 2, w * 0.16, w / 2, w / 2, w / 2);
+  r.addColorStop(0, 'rgba(255,250,235,1)'); r.addColorStop(0.32, 'rgba(255,250,235,1)'); r.addColorStop(0.36, 'rgba(200,215,255,.25)'); r.addColorStop(1, 'rgba(200,215,255,0)');
+  g.fillStyle = r; g.fillRect(0, 0, w, w);
+  g.fillStyle = 'rgba(150,150,140,.25)'; g.beginPath(); g.arc(w * 0.44, w * 0.45, w * 0.05, 0, TAU); g.arc(w * 0.56, w * 0.56, w * 0.035, 0, TAU); g.fill();
+}), transparent: true, depthWrite: false, fog: false }));
+moon.scale.setScalar(700); scene.add(moon);
+
+const sun = new THREE.DirectionalLight(0xffffff, 3);
+sun.castShadow = true;
+sun.shadow.mapSize.set(small ? 1024 : 2048, small ? 1024 : 2048);
+Object.assign(sun.shadow.camera, { left: -260, right: 260, top: 260, bottom: -260, near: 50, far: 3000 });
+sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.6;
+scene.add(sun, sun.target);
+const moonLight = new THREE.DirectionalLight(0x9fb6ff, 0);
+scene.add(moonLight, moonLight.target);
+const hemi = new THREE.HemisphereLight(0xbcd3e0, 0x1a2a30, 0.4);
+scene.add(hemi);
+
+/* ═══════════════ hull builder ═══════════════ */
+function hullFns(P) {
+  const deckH = s => P.D + (P.fcle ? 2.8 * smooth(0.905, 0.925, s) : 0) + 1.3 * Math.pow(Math.max(0, s - 0.6) / 0.4, 2);
+  const keel = s => (s < 0.09 ? P.T * 0.92 * Math.pow(1 - s / 0.09, 1.4) : 0);
+  const halfB = (s, h) => {
+    let f = 1;
+    if (s > 0.74) { const e = Math.max((1 - s) / 0.26, 0); f *= Math.pow(e, 0.5 + 0.75 * (1 - h)); }
+    if (s < 0.16) { const g = s / 0.16; const low = 0.18 + 0.82 * Math.pow(g, 0.6); f *= lerp(low, 0.86 + 0.14 * g, smooth(0.25, 0.7, h)); }
+    return (P.B / 2) * f;
+  };
+  const xAt = (s, h) => -P.L / 2 + s * P.L + (s > 0.9 ? (s - 0.9) / 0.1 * h * h * P.L * 0.03 : 0) - (s < 0.06 ? (1 - s / 0.06) * h * P.L * 0.015 : 0);
+  return { deckH, keel, halfB, xAt };
+}
+function buildHull(P) {
+  const F = hullFns(P);
+  const NS = P.ns || 140, NP = P.np || 56;
+  const pos = [], idx = [], deckPos = [], deckIdx = [];
+  const fullness = s => smooth(0.0, 0.22, s) * (1 - smooth(0.62, 0.97, s));
+  for (let i = 0; i <= NS; i++) {
+    const s = 0.5 - 0.5 * Math.cos(Math.PI * i / NS);
+    const dH = F.deckH(s), zk = F.keel(s), n = lerp(2.4, P.box || 12, fullness(s)), e = 2 / n;
+    for (let j = 0; j <= NP; j++) {
+      const a = (j / NP) * Math.PI, cx = -Math.cos(a), cz = Math.sin(a);
+      const lat = Math.sign(cx) * Math.pow(Math.abs(cx), e);
+      const h = 1 - Math.pow(cz, e);
+      pos.push(F.xAt(s, h), zk + (dH - zk) * h, lat * F.halfB(s, h));
+    }
+    const hb = F.halfB(s, 1), x = F.xAt(s, 1);
+    deckPos.push(x, dH, -hb, x, dH, hb);
+  }
+  for (let i = 0; i < NS; i++) for (let j = 0; j < NP; j++) {
+    const a = i * (NP + 1) + j, b = a + NP + 1;
+    idx.push(a, b, a + 1, b, b + 1, a + 1);
+  }
+  for (let i = 0; i < NS; i++) { const a = i * 2; deckIdx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+  // transom cap
+  const c0 = pos.length / 3; let cx = 0, cy = 0, cz = 0;
+  for (let j = 0; j <= NP; j++) { cx += pos[j * 3]; cy += pos[j * 3 + 1]; cz += pos[j * 3 + 2]; }
+  pos.push(cx / (NP + 1), cy / (NP + 1), cz / (NP + 1));
+  for (let j = 0; j < NP; j++) idx.push(c0, j, j + 1);
+  idx.push(c0, NP, 0);
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
+  const dg = new THREE.BufferGeometry();
+  dg.setAttribute('position', new THREE.Float32BufferAttribute(deckPos, 3)); dg.setIndex(deckIdx); dg.computeVertexNormals();
+  return { hull: g, deck: dg, F };
+}
+function hullMaterial(T, top, bottom, boot = [0.72, 0.73, 0.7]) {
+  const m = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.55, metalness: 0.15, side: THREE.DoubleSide });
+  m.onBeforeCompile = sh => {
+    sh.uniforms.uT = { value: T };
+    sh.uniforms.uTop = { value: new THREE.Vector3(...top) };
+    sh.uniforms.uBot = { value: new THREE.Vector3(...bottom) };
+    sh.uniforms.uBoot = { value: new THREE.Vector3(...boot) };
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying float vHy;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvHy = position.y;');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying float vHy; uniform float uT; uniform vec3 uTop, uBot, uBoot;')
+      .replace('#include <color_fragment>', `#include <color_fragment>
+        float bw = max(uT * 0.06, 0.25);
+        vec3 hc = mix(uBot, uTop, step(uT + bw * 0.4, vHy));
+        hc = mix(hc, uBoot, step(uT + bw * 0.4, vHy) * step(vHy, uT + bw * 1.3));
+        diffuseColor.rgb = hc;`);
+  };
+  return m;
+}
+
+/* ═══════════════ own ship ═══════════════ */
+const ship = new THREE.Group();          // yaw + position
+const pivot = new THREE.Group();         // heave/roll/pitch about waterline
+const hullRoot = new THREE.Group();      // keel frame
+hullRoot.position.y = -SH.T;
+pivot.add(hullRoot); ship.add(pivot); scene.add(ship);
+const XB = 52, XF = -118;                // bridge & funnel stations
+const anchors = {};
+const navLights = [];
+const spin = [];
+let flag, flagGeo, funnelTop, sternPt;
+
+function addBox(parent, w, h, d, mat, x, y, z, cast = true) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  m.position.set(x, y, z); m.castShadow = cast; m.receiveShadow = true; parent.add(m); return m;
+}
+function navLight(parent, color, x, y, z, sector, size = 1) {
+  const core = new THREE.Mesh(new THREE.SphereGeometry(0.35 * size, 8, 6), new THREE.MeshBasicMaterial({ color, fog: false }));
+  core.position.set(x, y, z); parent.add(core);
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, fog: false }));
+  spr.position.copy(core.position); parent.add(spr);
+  const L = { core, spr, sector, size, owner: parent };
+  navLights.push(L); return L;
+}
+
+function buildShip() {
+  const { hull, deck, F } = buildHull({ ...SH, fcle: true });
+  const hullMesh = new THREE.Mesh(hull, hullMaterial(SH.T, [0.012, 0.035, 0.055], [0.26, 0.03, 0.02]));
+  hullMesh.receiveShadow = true; hullMesh.castShadow = true; hullRoot.add(hullMesh);
+  const deckMat = new THREE.MeshStandardMaterial({ color: 0x55645c, roughness: 0.9 });
+  const deckMesh = new THREE.Mesh(deck, deckMat); deckMesh.receiveShadow = true; hullRoot.add(deckMesh);
+  // bulbous bow & rudder
+  const red = new THREE.MeshStandardMaterial({ color: 0x8a2f26, roughness: 0.7 });
+  const bulb = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16), red);
+  bulb.scale.set(13, SH.T * 0.33, 4.6); bulb.position.set(SH.L / 2 - 4, SH.T * 0.38, 0); hullRoot.add(bulb);
+  addBox(hullRoot, 9, 11, 1.2, red, -SH.L / 2 + 5, 6.5, 0, false);
+
+  const white = new THREE.MeshStandardMaterial({ color: 0xe9ecea, roughness: 0.6 });
+  const grey = new THREE.MeshStandardMaterial({ color: 0x6b7378, roughness: 0.8 });
+  const lightGrey = new THREE.MeshStandardMaterial({ color: 0xa7adb0, roughness: 0.7 });
+  const navy = new THREE.MeshStandardMaterial({ color: 0x1c3442, roughness: 0.5 });
+  const amber = new THREE.MeshStandardMaterial({ color: 0xe8a33a, roughness: 0.5 });
+  const black = new THREE.MeshStandardMaterial({ color: 0x15181a, roughness: 0.8 });
+  const D = SH.D;
+
+  // forecastle: breakwater, foremast, winches
+  const sBw = 0.885, xBw = F.xAt(sBw, 1), hbBw = F.halfB(sBw, 1) - 1;
+  for (const side of [-1, 1]) {
+    const len = Math.hypot(hbBw, 10);
+    const bw = addBox(hullRoot, len, 5.5, 0.5, lightGrey, xBw + 5, F.deckH(sBw) + 2.75, side * hbBw / 2);
+    bw.rotation.y = side * Math.atan2(hbBw, 10);
+  }
+  const xFm = SH.L / 2 - 16, yFc = F.deckH(0.97);
+  const fm = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.5, 15, 8), lightGrey);
+  fm.position.set(xFm, yFc + 7.5, 0); hullRoot.add(fm);
+  navLight(hullRoot, 0xfff4e0, xFm, yFc + 15.3, 0, 'mast');
+  for (const z of [-8, 8]) for (const dx of [-6, 4]) {
+    const w = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.1, 2.6, 14), grey);
+    w.rotation.x = Math.PI / 2; w.position.set(xFm + dx, yFc + 1.3, z); hullRoot.add(w);
+  }
+  anchors.mooring = new THREE.Vector3(xFm - 2, yFc + 3, 0);
+
+  // containers, hatch covers, lashing bridges
+  const palette = ['#a8432e', '#2d5b87', '#8a9094', '#e7e4dc', '#2f6c4c', '#c4762c', '#d3ad3c', '#3c8a8a', '#7a2f3f', '#1f3d68', '#94492a', '#5b6e7a'];
+  const weights = [12, 12, 10, 8, 7, 7, 4, 5, 4, 9, 6, 6];
+  const wsum = weights.reduce((a, b) => a + b, 0);
+  const r = rng(2026);
+  const pick = () => { let v = r() * wsum; for (let i = 0; i < palette.length; i++) { v -= weights[i]; if (v <= 0) return palette[i]; } return palette[0]; };
+  const CL = 12.19, CH = 2.59, CW = 2.44, PITCH = 12.8, ROWW = 2.52;
+  const boxes = [], hatches = [], lash = [];
+  for (let x0 = -SH.L / 2 + 26; x0 + CL < SH.L / 2 - 40; x0 += PITCH) {
+    const xc = x0 + CL / 2;
+    if (Math.abs(xc - XB) < 13 || Math.abs(xc - XF) < 14) continue;
+    const s1 = (x0 + SH.L / 2) / SH.L, s2 = (x0 + CL + SH.L / 2) / SH.L;
+    const avail = Math.min(F.halfB(s1, 1), F.halfB(s2, 1)) - 1.4;
+    const rows = Math.floor((avail * 2) / ROWW);
+    if (rows < 4) continue;
+    const yDeck = Math.max(F.deckH(s1), F.deckH(s2));
+    hatches.push([xc, yDeck + 0.6, rows * ROWW + 0.8]);
+    // SOLAS visibility: stacks forward of the bridge step down towards the bow
+    const fwd = xc > XB ? 1 - (xc - XB) / (SH.L / 2 - XB) : 1;
+    const maxT = xc > XB ? Math.round(3 + fwd * 4) : 7;
+    const bayFill = 0.75 + r() * 0.25;
+    for (let ri = 0; ri < rows; ri++) {
+      const z = (ri - (rows - 1) / 2) * ROWW;
+      const edge = Math.abs(ri - (rows - 1) / 2) / ((rows - 1) / 2 || 1);
+      let tiers = Math.round(maxT * bayFill - edge * edge * 2 + (r() - 0.5) * 2.2);
+      if (r() < 0.04) tiers = 0;
+      tiers = clamp(tiers, 0, maxT);
+      for (let t = 0; t < tiers; t++) boxes.push([xc, yDeck + 1.2 + CH / 2 + t * CH, z, pick()]);
+    }
+    if (xc - PITCH / 2 > -SH.L / 2 + 30) lash.push([x0 - 0.3, yDeck + 1.2 + CH, rows * ROWW]);
+  }
+  const cMat = new THREE.MeshStandardMaterial({ map: corrugTex, roughness: 0.75, metalness: 0.2 });
+  const cMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(CL, CH, CW), cMat, boxes.length);
+  const m4 = new THREE.Matrix4(), col = new THREE.Color();
+  boxes.forEach((b, i) => { m4.makeTranslation(b[0], b[1], b[2]); cMesh.setMatrixAt(i, m4); cMesh.setColorAt(i, col.set(b[3])); });
+  cMesh.castShadow = cMesh.receiveShadow = true; hullRoot.add(cMesh);
+  const hMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), grey, hatches.length);
+  hatches.forEach((h, i) => { m4.compose(new THREE.Vector3(h[0], h[1], 0), new THREE.Quaternion(), new THREE.Vector3(CL + 0.4, 1.2, h[2])); hMesh.setMatrixAt(i, m4); });
+  hMesh.receiveShadow = true; hullRoot.add(hMesh);
+  const lMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), lightGrey, lash.length);
+  lash.forEach((l, i) => { m4.compose(new THREE.Vector3(l[0], l[1], 0), new THREE.Quaternion(), new THREE.Vector3(0.45, CH * 2, l[2])); lMesh.setMatrixAt(i, m4); });
+  lMesh.castShadow = true; hullRoot.add(lMesh);
+  anchors.cargo = new THREE.Vector3(-20, D + 20, 0);
+  stats.teu = boxes.length * 2;
+
+  // accommodation block & wheelhouse
+  const wf = windowsTex(12, 9, 0.55, 3), ws = windowsTex(5, 9, 0.5, 4);
+  const mk = (t) => new THREE.MeshStandardMaterial({ map: t.map, emissiveMap: t.emissive, emissive: 0xffffff, emissiveIntensity: 0, roughness: 0.6 });
+  const accF = mk(wf), accS = mk(ws);
+  const accMats = [accF, accF, white, white, accS, accS];
+  const acc = new THREE.Mesh(new THREE.BoxGeometry(16, 26, 32), accMats);
+  acc.position.set(XB, D + 13, 0); acc.castShadow = acc.receiveShadow = true; hullRoot.add(acc);
+  const glass = canvasTex(512, 64, (g, w, h) => {
+    const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, '#1d2a33'); gr.addColorStop(1, '#0b1217');
+    g.fillStyle = '#e9ecea'; g.fillRect(0, 0, w, h); g.fillStyle = gr; g.fillRect(0, h * 0.18, w, h * 0.62);
+    g.fillStyle = '#e9ecea'; for (let x = 0; x < w; x += w / 16) g.fillRect(x, h * 0.18, 3, h * 0.62);
+  });
+  const glassE = canvasTex(512, 64, (g, w, h) => { g.fillStyle = '#000'; g.fillRect(0, 0, w, h); g.fillStyle = '#3d6a4a'; g.fillRect(0, h * 0.5, w, h * 0.3); });
+  const whMat = new THREE.MeshStandardMaterial({ map: glass, emissiveMap: glassE, emissive: 0xffffff, emissiveIntensity: 0, roughness: 0.3, metalness: 0.3 });
+  const wh = new THREE.Mesh(new THREE.BoxGeometry(13, 3.6, 36), [whMat, whMat, white, white, whMat, whMat]);
+  wh.position.set(XB + 1, D + 27.8, 0); wh.castShadow = true; hullRoot.add(wh);
+  addBox(hullRoot, 5, 0.8, SH.B, white, XB + 3, D + 26.2, 0);                       // bridge wings
+  for (const side of [-1, 1]) addBox(hullRoot, 4, 3, 3, whMat, XB + 3, D + 28, side * (SH.B / 2 - 1.5));
+  addBox(hullRoot, 13.5, 0.4, 36.5, white, XB + 1, D + 29.8, 0);                  // compass deck roof
+  // mast, radars, VSAT domes
+  const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.6, 9, 8), white);
+  mast.position.set(XB, D + 34.3, 0); hullRoot.add(mast);
+  addBox(hullRoot, 1, 0.5, 14, white, XB, D + 34, 0, false);
+  for (const [z, len, y, rate] of [[-4.5, 6.5, D + 34.6, 24], [4.5, 4.2, D + 34.6, 22]]) {
+    const sc = addBox(hullRoot, 0.5, 0.45, len, black, XB + 0.8, y, z, false);
+    sc.rotation.y = Math.random() * TAU; spin.push({ o: sc, rate: rate / 60 * TAU });
+  }
+  for (const z of [-12, 12]) {
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(1.5, 18, 12), white);
+    dome.position.set(XB - 3, D + 31.6, z); dome.castShadow = true; hullRoot.add(dome);
+    addBox(hullRoot, 2, 1.4, 2, white, XB - 3, D + 30.4, z, false);
+  }
+  navLight(hullRoot, 0xfff4e0, XB, D + 38.9, 0, 'mast');
+  navLight(hullRoot, 0xff3b30, XB + 3, D + 28.2, -SH.B / 2 - 0.2, 'port');
+  navLight(hullRoot, 0x30ff6a, XB + 3, D + 28.2, SH.B / 2 + 0.2, 'stbd');
+  anchors.nav = new THREE.Vector3(XB + 1, D + 30.5, 0);
+  anchors.comms = new THREE.Vector3(XB - 3, D + 33.3, 12);
+  anchors.fire = new THREE.Vector3(XB - 8, D + 14, -16);
+  // free-fall lifeboat
+  const lb = new THREE.Mesh(new THREE.CapsuleGeometry(1.6, 6.5, 6, 14), new THREE.MeshStandardMaterial({ color: 0xf06a1c, roughness: 0.5 }));
+  lb.rotation.z = Math.PI / 2 + 0.55; lb.position.set(XB - 11.5, D + 9, 0); lb.castShadow = true; hullRoot.add(lb);
+  addBox(hullRoot, 9, 0.5, 4.5, lightGrey, XB - 11, D + 7, 0).rotation.z = 0.55;
+
+  // engine casing & funnel
+  addBox(hullRoot, 20, 12, 24, white, XF, D + 6, 0);
+  const fs = new THREE.Shape(); const fw = 6, fl = 7.5, fr = 3;
+  fs.moveTo(-fl + fr, -fw); fs.lineTo(fl - fr, -fw); fs.quadraticCurveTo(fl, -fw, fl, -fw + fr); fs.lineTo(fl, fw - fr); fs.quadraticCurveTo(fl, fw, fl - fr, fw);
+  fs.lineTo(-fl + fr, fw); fs.quadraticCurveTo(-fl, fw, -fl, fw - fr); fs.lineTo(-fl, -fw + fr); fs.quadraticCurveTo(-fl, -fw, -fl + fr, -fw);
+  const funnelG = h => { const g = new THREE.ExtrudeGeometry(fs, { depth: h, bevelEnabled: false, curveSegments: 6 }); g.rotateX(-Math.PI / 2); return g; };
+  const fun = new THREE.Mesh(funnelG(15), navy); fun.position.set(XF - 1, D + 12, 0); fun.castShadow = true; hullRoot.add(fun);
+  const band = new THREE.Mesh(funnelG(2.2), amber); band.scale.set(1.02, 1, 1.02); band.position.set(XF - 1, D + 21.5, 0); hullRoot.add(band);
+  const cap = new THREE.Mesh(funnelG(1.2), black); cap.scale.set(1.01, 1, 1.01); cap.position.set(XF - 1, D + 26, 0); hullRoot.add(cap);
+  for (const [dx, dz, rr] of [[-2.5, -2, 0.9], [-2.5, 2, 0.9], [2.2, 0, 1.3]]) {
+    const p = new THREE.Mesh(new THREE.CylinderGeometry(rr, rr, 3, 12), black); p.position.set(XF - 1 + dx, D + 28, dz); hullRoot.add(p);
+  }
+  funnelTop = new THREE.Vector3(XF - 1, D + 29.5, 0);
+  anchors.propulsion = new THREE.Vector3(XF, D + 13, 12);
+  anchors.power = new THREE.Vector3(XF + 4, D + 6, -12);
+
+  // stern: mooring winches, light, ensign
+  const xSt = -SH.L / 2 + 8, ySt = F.deckH(0.03);
+  for (const z of [-9, 9]) { const w = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 2.4, 14), grey); w.rotation.x = Math.PI / 2; w.position.set(xSt + 6, ySt + 1.2, z); hullRoot.add(w); }
+  navLight(hullRoot, 0xfff4e0, -SH.L / 2 - 4, ySt + 3, 0, 'stern');
+  anchors.steering = new THREE.Vector3(xSt, ySt + 2, 0);
+  const staff = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 8, 6), lightGrey);
+  staff.position.set(-SH.L / 2 - 3, ySt + 4, 0); hullRoot.add(staff);
+  flagGeo = new THREE.PlaneGeometry(4.5, 3, 18, 12); flagGeo.translate(2.25, 0, 0);
+  flagGeo.userData.base = flagGeo.attributes.position.array.slice();
+  flag = new THREE.Mesh(flagGeo, new THREE.MeshStandardMaterial({ map: flagTex(), side: THREE.DoubleSide, roughness: 0.8 }));
+  flag.position.set(-SH.L / 2 - 3, ySt + 6.5, 0); hullRoot.add(flag);
+  sternPt = new THREE.Vector3(-SH.L / 2 - 3, 0, 0);
+
+  // hull decals: name, port of registry, draft marks, load line
+  const decal = (tex, w, h, x, y, z, ry) => {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ map: tex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, roughness: 0.6 }));
+    m.position.set(x, y, z); m.rotation.y = ry; hullRoot.add(m); return m;
+  };
+  const nameT = textTex(['HANBADA'], 1024, 160);
+  const sN = 0.83, xN = -SH.L / 2 + sN * SH.L, yN = D - 4, hN = F.halfB(sN, yN / F.deckH(sN));
+  const slope = (F.halfB(sN + 0.004, yN / D) - F.halfB(sN - 0.004, yN / D)) / (0.008 * SH.L);
+  const aN = -Math.atan(slope);
+  decal(nameT, 36, 5.6, xN, yN, hN + 0.15, aN);
+  decal(nameT, 36, 5.6, xN, yN, -hN - 0.15, Math.PI - aN);
+  decal(textTex(['HANBADA', 'BUSAN'], 512, 220), 22, 9.4, -SH.L / 2 - SH.L * 0.015 * 0.85 - 0.25, D - 6, 0, -Math.PI / 2);
+  const draftT = canvasTex(64, 1024, (g, w, h) => {
+    g.fillStyle = '#f2f2ee'; g.textAlign = 'center'; g.font = '700 30px "Barlow Condensed", sans-serif';
+    for (let m = 2; m <= 18; m += 2) { const y = h - (m / 20) * h; g.fillText(m + 'M', w / 2, y + 10); }
+  });
+  for (const side of [-1, 1]) {
+    const sD = 0.955, hD = F.halfB(sD, 0.35);
+    decal(draftT, 1.6, 20, F.xAt(sD, 0.35), 10, side * (hD + 0.15), side > 0 ? -Math.atan((F.halfB(0.959, .35) - F.halfB(0.951, .35)) / (0.008 * SH.L)) : Math.PI + Math.atan((F.halfB(0.959, .35) - F.halfB(0.951, .35)) / (0.008 * SH.L)));
+  }
+  const loadT = canvasTex(256, 128, (g) => {
+    g.strokeStyle = '#f2f2ee'; g.fillStyle = '#f2f2ee'; g.lineWidth = 6;
+    g.beginPath(); g.arc(80, 64, 40, 0, TAU); g.stroke(); g.fillRect(20, 61, 120, 6);
+    g.font = '700 26px "Barlow Condensed", sans-serif'; g.fillText('K', 60, 40); g.fillText('R', 88, 40);
+    g.fillRect(170, 20, 6, 88); [24, 44, 64, 84, 104].forEach(y => g.fillRect(176, y - 3, 40, 6));
+  });
+  for (const side of [-1, 1]) decal(loadT, 7, 3.5, 0, SH.T + 3, side * (SH.B / 2 + 0.12), side > 0 ? 0 : Math.PI);
+
+  // waterline bow wave foam (clings to hull)
+  const bwPos = [], bwUv = [], bwIdx = [];
+  const N = 48;
+  for (const side of [-1, 1]) {
+    const base = bwPos.length / 3;
+    for (let i = 0; i <= N; i++) {
+      const s = 1 - (i / N) * 0.62, h = SH.T / F.deckH(s), hb = F.halfB(s, h) + 0.2, x = F.xAt(s, h);
+      const spread = 1.5 + (i / N) * 9;
+      bwPos.push(x, SH.T + 0.35, side * hb, x - 1.5, SH.T + 0.25, side * (hb + spread));
+      bwUv.push(i / N, 0, i / N, 1);
+    }
+    for (let i = 0; i < N; i++) { const a = base + i * 2; bwIdx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+  }
+  const bwG = new THREE.BufferGeometry();
+  bwG.setAttribute('position', new THREE.Float32BufferAttribute(bwPos, 3)); bwG.setAttribute('uv', new THREE.Float32BufferAttribute(bwUv, 2)); bwG.setIndex(bwIdx);
+  bowFoam = new THREE.Mesh(bwG, new THREE.ShaderMaterial({
+    uniforms: { uTime: oceanUniforms.uTime, uAmt: { value: 1 }, uLight: oceanUniforms.uLight },
+    vertexShader: `varying vec2 vUv; varying vec3 vP; void main(){ vUv = uv; vP = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+    fragmentShader: `uniform float uTime, uAmt, uLight; varying vec2 vUv; varying vec3 vP;
+      float h(vec2 p){ return fract(sin(dot(p, vec2(41.3, 289.1))) * 1e4); }
+      float n(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.-2.*f); return mix(mix(h(i), h(i+vec2(1,0)), f.x), mix(h(i+vec2(0,1)), h(i+vec2(1,1)), f.x), f.y); }
+      void main(){
+        float nn = n(vec2(vP.x * 0.35 + uTime * 2.0, vUv.y * 6.0)) * n(vec2(vP.x * 0.9 + uTime * 3.0, vUv.y * 14.0 + 3.0));
+        float a = (1.0 - vUv.y) * (1.0 - vUv.x * 0.9) * smoothstep(0.05, 0.4, nn + 0.25 - vUv.y * 0.3) * uAmt;
+        gl_FragColor = vec4(vec3(0.9, 0.94, 0.95) * (uLight * 0.9 + 0.06), a * 0.9);
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
+      }`,
+    transparent: true, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2,
+  }));
+  hullRoot.add(bowFoam);
+
+  // deck floodlights for night
+  floods = [new THREE.PointLight(0xffd9a0, 0, 140, 1.6), new THREE.PointLight(0xffd9a0, 0, 140, 1.6)];
+  floods[0].position.set(XB + 9, D + 25, 0); floods[1].position.set(XF + 12, D + 18, 0);
+  floods.forEach(l => hullRoot.add(l));
+  accMaterials = [accF, accS, whMat];
+
+  Object.values(anchors).forEach(() => {});
+  return F;
+}
+let bowFoam, floods = [], accMaterials = [];
+const stats = { teu: 0 };
+
+/* ═══════════════ other traffic ═══════════════ */
+function buildVessel(kind) {
+  const g = new THREE.Group(), piv = new THREE.Group(), root = new THREE.Group();
+  g.add(piv); piv.add(root);
+  const white = new THREE.MeshStandardMaterial({ color: 0xe6e8e6, roughness: 0.6 });
+  let P;
+  if (kind === 'tanker') P = { L: 330, B: 60, D: 29, T: 20, box: 14, fcle: true, ns: 60, np: 24 };
+  else if (kind === 'box') P = { L: 300, B: 45, D: 25, T: 13, box: 11, fcle: true, ns: 60, np: 24 };
+  else P = { L: 46, B: 9.5, D: 5, T: 3.4, box: 5, fcle: false, ns: 30, np: 16 };
+  root.position.y = -P.T;
+  const top = kind === 'tanker' ? [0.03, 0.03, 0.03] : kind === 'box' ? [0.25, 0.04, 0.03] : [0.02, 0.09, 0.2];
+  const { hull, deck } = buildHull(P);
+  root.add(new THREE.Mesh(hull, hullMaterial(P.T, top, [0.26, 0.03, 0.02])));
+  root.add(new THREE.Mesh(deck, new THREE.MeshStandardMaterial({ color: kind === 'tanker' ? 0x7a3a30 : 0x55645c, roughness: 0.9 })));
+  let mastTop;
+  if (kind === 'fish') {
+    addBox(root, 9, 4, 6.5, white, 8, P.D + 2, 0, false);
+    addBox(root, 1.2, 9, 7.5, new THREE.MeshStandardMaterial({ color: 0x2a6fb0 }), -16, P.D + 4.5, 0, false);
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.2, 10, 6), white); m.position.set(9, P.D + 9, 0); root.add(m);
+    mastTop = P.D + 14;
+    navLight(root, 0x30ff6a, 9, mastTop, 0, 'all', 0.8);       // trawling: green over white
+    navLight(root, 0xfff4e0, 9, mastTop - 2.2, 0, 'all', 0.8);
+    navLight(root, 0xff3b30, 7, P.D + 4.2, -3.4, 'port', 0.6);
+    navLight(root, 0x30ff6a, 7, P.D + 4.2, 3.4, 'stbd', 0.6);
+    navLight(root, 0xfff4e0, -P.L / 2 - 0.5, P.D + 1.5, 0, 'stern', 0.6);
+  } else {
+    const xa = -P.L / 2 + 34;
+    addBox(root, 18, 22, P.B * 0.62, white, xa, P.D + 11, 0, false);
+    addBox(root, 10, 3, P.B, white, xa + 3, P.D + 22.5, 0, false);
+    addBox(root, 9, 12, 7, new THREE.MeshStandardMaterial({ color: kind === 'tanker' ? 0xc93b2c : 0x2b4a6a }), xa - 10, P.D + 20, 0, false);
+    if (kind === 'tanker') {
+      addBox(root, P.L * 0.62, 1.4, 2.2, new THREE.MeshStandardMaterial({ color: 0x9aa0a3 }), 30, P.D + 0.8, 0, false);
+      addBox(root, 4, 6, 26, new THREE.MeshStandardMaterial({ color: 0xc9c9c4 }), 10, P.D + 3, 0, false);
+    } else {
+      const r = rng(kind.length * 13), boxes = [];
+      for (let x = xa + 18; x < P.L / 2 - 34; x += 12.8) for (let z = -7; z <= 7; z++) {
+        const t = Math.floor(3 + r() * 4);
+        for (let k = 0; k < t; k++) boxes.push([x, P.D + 1.3 + k * 2.6, z * 2.55]);
+      }
+      const cm = new THREE.InstancedMesh(new THREE.BoxGeometry(12.2, 2.6, 2.44), new THREE.MeshStandardMaterial({ map: corrugTex, roughness: 0.8 }), boxes.length);
+      const m4 = new THREE.Matrix4(), c = new THREE.Color(), pal = ['#2d5b87', '#a8432e', '#8a9094', '#2f6c4c', '#c4762c', '#1f3d68'];
+      boxes.forEach((b, i) => { m4.makeTranslation(b[0], b[1], b[2]); cm.setMatrixAt(i, m4); cm.setColorAt(i, c.set(pal[Math.floor(r() * pal.length)])); });
+      root.add(cm);
+      navLight(root, 0xfff4e0, P.L / 2 - 20, P.D + 16, 0, 'mast');
+    }
+    mastTop = P.D + 32;
+    navLight(root, 0xfff4e0, xa + 2, mastTop, 0, 'mast');
+    navLight(root, 0xff3b30, xa + 4, P.D + 23.5, -P.B / 2 - 0.2, 'port');
+    navLight(root, 0x30ff6a, xa + 4, P.D + 23.5, P.B / 2 + 0.2, 'stbd');
+    navLight(root, 0xfff4e0, -P.L / 2 - 1, P.D + 3, 0, 'stern');
+  }
+  return { group: g, pivot: piv, root, P };
+}
+const traffic = [
+  { name: 'OCEAN PIONEER', type: 'VLCC 유조선', kind: 'tanker' },
+  { name: '제7 동해호', type: '트롤 어선 · 조업 중', kind: 'fish' },
+  { name: 'NORDIC STAR', type: '컨테이너선', kind: 'box' },
+];
+
+/* ═══════════════ particles (smoke, spray) ═══════════════ */
+class Particles {
+  constructor(max, color, opacity, blending = THREE.NormalBlending) {
+    this.max = max; this.n = 0; this.i = 0;
+    this.pos = new Float32Array(max * 3); this.vel = new Float32Array(max * 3);
+    this.size = new Float32Array(max); this.alpha = new Float32Array(max);
+    this.age = new Float32Array(max).fill(1e9); this.life = new Float32Array(max).fill(1); this.grow = new Float32Array(max);
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(this.pos, 3).setUsage(THREE.DynamicDrawUsage));
+    g.setAttribute('aSize', new THREE.BufferAttribute(this.size, 1).setUsage(THREE.DynamicDrawUsage));
+    g.setAttribute('aAlpha', new THREE.BufferAttribute(this.alpha, 1).setUsage(THREE.DynamicDrawUsage));
+    this.mat = new THREE.ShaderMaterial({
+      uniforms: { uTex: { value: puffTex }, uColor: { value: new THREE.Color(color) }, uScale: { value: 600 }, uOp: { value: opacity }, uLight: oceanUniforms.uLight },
+      vertexShader: `attribute float aSize; attribute float aAlpha; varying float vA; uniform float uScale;
+        void main(){ vA = aAlpha; vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_PointSize = aSize * uScale / max(-mv.z, 1.0); gl_Position = projectionMatrix * mv; }`,
+      fragmentShader: `uniform sampler2D uTex; uniform vec3 uColor; uniform float uOp, uLight; varying float vA;
+        void main(){ vec4 t = texture2D(uTex, gl_PointCoord); gl_FragColor = vec4(uColor * (uLight * 0.85 + 0.12), t.a * vA * uOp);
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
+        }`,
+      transparent: true, depthWrite: false, blending,
+    });
+    this.points = new THREE.Points(g, this.mat); this.points.frustumCulled = false; scene.add(this.points);
+  }
+  spawn(x, y, z, vx, vy, vz, size, life, grow) {
+    const i = this.i; this.i = (this.i + 1) % this.max;
+    this.pos.set([x, y, z], i * 3); this.vel.set([vx, vy, vz], i * 3);
+    this.size[i] = size; this.age[i] = 0; this.life[i] = life; this.grow[i] = grow;
+  }
+  update(dt, gravity = 0, drag = 0) {
+    for (let i = 0; i < this.max; i++) {
+      const a = (this.age[i] += dt), t = a / this.life[i];
+      if (t >= 1) { this.alpha[i] = 0; continue; }
+      const k = i * 3;
+      this.vel[k + 1] -= gravity * dt;
+      const d = 1 - drag * dt; this.vel[k] *= d; this.vel[k + 2] *= d;
+      this.pos[k] += this.vel[k] * dt; this.pos[k + 1] += this.vel[k + 1] * dt; this.pos[k + 2] += this.vel[k + 2] * dt;
+      this.size[i] += this.grow[i] * dt;
+      this.alpha[i] = Math.sin(Math.min(t * 6, 1) * Math.PI / 2) * (1 - t);
+    }
+    const at = this.points.geometry.attributes; at.position.needsUpdate = at.aSize.needsUpdate = at.aAlpha.needsUpdate = true;
+  }
+  shift(dx, dz) { for (let i = 0; i < this.max; i++) { this.pos[i * 3] -= dx; this.pos[i * 3 + 2] -= dz; } }
+}
+
+/* ═══════════════ wake (centre wash + Kelvin arms at 19.47°) ═══════════════ */
+const KELVIN = Math.tan(19.47 * DEG);
+class Wake {
+  constructor(n) {
+    this.n = n; this.s = []; this.meshes = [];
+    for (let r = 0; r < 3; r++) {
+      const g = new THREE.BufferGeometry();
+      const pos = new Float32Array(n * 2 * 3), uv = new Float32Array(n * 2 * 2), al = new Float32Array(n * 2);
+      g.setAttribute('position', new THREE.BufferAttribute(pos, 3).setUsage(THREE.DynamicDrawUsage));
+      g.setAttribute('uv', new THREE.BufferAttribute(uv, 2).setUsage(THREE.DynamicDrawUsage));
+      g.setAttribute('aA', new THREE.BufferAttribute(al, 1).setUsage(THREE.DynamicDrawUsage));
+      const idx = []; for (let i = 0; i < n - 1; i++) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+      g.setIndex(idx);
+      const m = new THREE.Mesh(g, new THREE.ShaderMaterial({
+        uniforms: { uTime: oceanUniforms.uTime, uLight: oceanUniforms.uLight, uStrong: { value: r === 0 ? 1 : 0.45 } },
+        vertexShader: `attribute float aA; varying float vA; varying vec2 vUv; void main(){ vA = aA; vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+        fragmentShader: `uniform float uTime, uLight, uStrong; varying float vA; varying vec2 vUv;
+          float h(vec2 p){ p = fract(p * vec2(233.34, 851.73)); p += dot(p, p + 23.45); return fract(p.x * p.y); }
+          float n(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.-2.*f); return mix(mix(h(i), h(i+vec2(1,0)), f.x), mix(h(i+vec2(0,1)), h(i+vec2(1,1)), f.x), f.y); }
+          void main(){
+            float across = abs(vUv.x * 2.0 - 1.0);
+            float edge = 1.0 - smoothstep(0.55, 1.0, across);
+            float f = n(vec2(vUv.x * 7.0, vUv.y * 0.09 + uTime * 0.05)) * 0.6 + n(vec2(vUv.x * 19.0, vUv.y * 0.31)) * 0.4;
+            float a = smoothstep(0.32, 0.72, f + vA * 0.35) * edge * vA * uStrong;
+            gl_FragColor = vec4(vec3(0.88, 0.93, 0.95) * (uLight * 0.9 + 0.05), a);
+            #include <tonemapping_fragment>
+            #include <colorspace_fragment>
+          }`,
+        transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3,
+      }));
+      m.frustumCulled = false; scene.add(m); this.meshes.push(m);
+    }
+  }
+  push(sample) { this.s.unshift(sample); if (this.s.length > this.n) this.s.pop(); }
+  shift(dx, dz) { for (const s of this.s) { s.sx -= dx; s.sz -= dz; s.bx -= dx; s.bz -= dz; } }
+  update(now, travel, sternX, sternZ, bowX, bowZ, h) {
+    const sx = Math.sin(h), sz = -Math.cos(h), px = -sz, pz = sx;     // fwd & starboard unit vectors
+    const head = { sx: sternX, sz: sternZ, bx: bowX, bz: bowZ, px, pz, t: now, d: travel, k: 1 };
+    const list = [head, ...this.s];
+    const cnt = Math.min(list.length, this.n);
+    for (let r = 0; r < 3; r++) {
+      const at = this.meshes[r].geometry.attributes, P = at.position.array, U = at.uv.array, A = at.aA.array;
+      for (let i = 0; i < this.n; i++) {
+        const s = list[Math.min(i, cnt - 1)];
+        const back = travel - s.d, age = now - s.t;
+        let cx, cz, w, a;
+        if (r === 0) { cx = s.sx; cz = s.sz; w = SH.B * 0.32 + back * 0.07; a = Math.pow(clamp(1 - back / 900, 0, 1), 1.3); }
+        else {
+          const side = r === 1 ? -1 : 1, off = back * KELVIN + SH.B * 0.45;
+          cx = s.bx + s.px * side * off; cz = s.bz + s.pz * side * off; w = 5 + back * 0.025;
+          a = Math.pow(clamp(1 - back / 1300, 0, 1), 1.6) * smooth(0, 40, back);
+        }
+        a *= clamp(1 - age / 300, 0, 1) * s.k;
+        if (i >= cnt) a = 0;
+        for (let e = 0; e < 2; e++) {
+          const o = (e ? 1 : -1) * w / 2, x = cx + s.px * o, z = cz + s.pz * o;
+          const k = (i * 2 + e);
+          P[k * 3] = x; P[k * 3 + 2] = z; P[k * 3 + 1] = (a > 0.001 ? waveHeight(x, z) : 0) + 0.3;
+          U[k * 2] = e; U[k * 2 + 1] = back; A[k] = a;
+        }
+      }
+      at.position.needsUpdate = at.uv.needsUpdate = at.aA.needsUpdate = true;
+    }
+  }
+}
+
+/* ═══════════════ birds & rain ═══════════════ */
+const birds = [];
+function buildBirds() {
+  const mat = new THREE.MeshStandardMaterial({ color: 0xf2f2ee, roughness: 0.8, side: THREE.DoubleSide });
+  const wingG = new THREE.BufferGeometry();
+  wingG.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, -0.35, 0, 0.9, 0.25, 0, 0.9, -0.2, 0, 1.8], 3));
+  wingG.setIndex([0, 1, 2, 1, 3, 2]); wingG.computeVertexNormals();
+  const r = rng(5);
+  for (let i = 0; i < 9; i++) {
+    const b = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.ConeGeometry(0.18, 1.1, 5), mat); body.rotation.z = -Math.PI / 2; b.add(body);
+    const L = new THREE.Mesh(wingG, mat), R = new THREE.Mesh(wingG, mat); R.scale.z = -1; b.add(L, R);
+    b.scale.setScalar(1.6);
+    b.userData = { L, R, ph: r() * TAU, rad: 25 + r() * 45, h: 38 + r() * 26, sp: (0.25 + r() * 0.2) * (r() < 0.5 ? -1 : 1), x0: -SH.L / 2 + 20 + r() * 60 };
+    ship.add(b); birds.push(b);
+  }
+}
+const rain = (() => {
+  const n = 1600, pos = new Float32Array(n * 6), r = rng(9);
+  const seeds = []; for (let i = 0; i < n; i++) seeds.push([r() * 160 - 80, r() * 70, r() * 160 - 80]);
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3).setUsage(THREE.DynamicDrawUsage));
+  const m = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: 0xbfd0d8, transparent: true, opacity: 0, depthWrite: false }));
+  m.frustumCulled = false; m.visible = false; scene.add(m);
+  return { m, seeds, pos, n };
+})();
+
+/* ═══════════════ voyage model ═══════════════ */
+const ROUTE = [
+  { n: '부산', lat: 35.08, lon: 129.07, port: true, area: '대한해협' },
+  { lat: 34.0, lon: 128.0, area: '동중국해' },
+  { lat: 30.5, lon: 124.5, area: '동중국해' },
+  { lat: 26.0, lon: 120.6, area: '대만해협' },
+  { lat: 22.5, lon: 118.0, area: '남중국해' },
+  { lat: 15.0, lon: 113.5, area: '남중국해' },
+  { lat: 8.0, lon: 108.0, area: '남중국해' },
+  { n: '싱가포르', lat: 1.22, lon: 103.85, port: true, area: '말라카 해협' },
+  { lat: 2.6, lon: 101.2, area: '말라카 해협' },
+  { lat: 5.9, lon: 97.8, area: '안다만해' },
+  { lat: 5.6, lon: 80.6, area: '아라비아해' },
+  { lat: 13.0, lon: 51.5, area: '아덴만' },
+  { n: '바브엘만데브', lat: 12.65, lon: 43.4, area: '홍해' },
+  { lat: 20.0, lon: 38.6, area: '홍해' },
+  { lat: 27.6, lon: 33.9, area: '수에즈만' },
+  { n: '수에즈', lat: 29.93, lon: 32.56, area: '수에즈 운하' },
+  { n: '포트사이드', lat: 31.30, lon: 32.33, port: true, area: '지중해' },
+  { lat: 33.8, lon: 24.0, area: '지중해' },
+  { lat: 37.45, lon: 11.7, area: '지중해' },
+  { lat: 37.0, lon: 0.5, area: '알보란해' },
+  { n: '지브롤터', lat: 35.95, lon: -5.6, area: '대서양' },
+  { lat: 36.9, lon: -9.5, area: '대서양' },
+  { lat: 43.2, lon: -9.9, area: '비스케이만' },
+  { lat: 48.4, lon: -5.8, area: '영국해협' },
+  { lat: 50.3, lon: -1.0, area: '영국해협' },
+  { lat: 51.0, lon: 1.6, area: '북해' },
+  { n: '로테르담', lat: 51.97, lon: 4.05, port: true, area: '마스 항로' },
+];
+const toVec = (lat, lon) => { const a = lat * DEG, b = lon * DEG; return [Math.cos(a) * Math.cos(b), Math.cos(a) * Math.sin(b), Math.sin(a)]; };
+const legs = []; let totalNm = 0;
+for (let i = 0; i < ROUTE.length - 1; i++) {
+  const A = toVec(ROUTE[i].lat, ROUTE[i].lon), B = toVec(ROUTE[i + 1].lat, ROUTE[i + 1].lon);
+  const ang = Math.acos(clamp(A[0] * B[0] + A[1] * B[1] + A[2] * B[2], -1, 1));
+  const nm = ang * 3440.065;
+  legs.push({ i, A, B, ang, nm, start: totalNm }); ROUTE[i].cum = totalNm; totalNm += nm;
+}
+ROUTE[ROUTE.length - 1].cum = totalNm;
+const PORTS = ROUTE.filter(p => p.port);
+function voyagePos(nm) {
+  nm = clamp(nm, 0, totalNm);
+  let L = legs[legs.length - 1];
+  for (const l of legs) if (nm <= l.start + l.nm) { L = l; break; }
+  const f = L.nm > 0 ? (nm - L.start) / L.nm : 0;
+  const s = Math.sin(L.ang);
+  const k1 = s > 1e-9 ? Math.sin((1 - f) * L.ang) / s : 1 - f, k2 = s > 1e-9 ? Math.sin(f * L.ang) / s : f;
+  const v = [0, 1, 2].map(j => L.A[j] * k1 + L.B[j] * k2);
+  const lat = Math.asin(clamp(v[2], -1, 1)) / DEG, lon = Math.atan2(v[1], v[0]) / DEG;
+  const p2 = ROUTE[L.i + 1];
+  const φ1 = lat * DEG, φ2 = p2.lat * DEG, dλ = (p2.lon - lon) * DEG;
+  const brg = Math.atan2(Math.sin(dλ) * Math.cos(φ2), Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(dλ));
+  return { lat, lon, brg: (brg + TAU) % TAU, leg: L.i, area: ROUTE[L.i].area };
+}
+function sunPosition(date, lat, lon) {
+  const d = (date - Date.UTC(2000, 0, 1, 12)) / 86400000;
+  const g = (357.529 + 0.98560028 * d) * DEG, q = 280.459 + 0.98564736 * d;
+  const L = (q + 1.915 * Math.sin(g) + 0.020 * Math.sin(2 * g)) * DEG, e = (23.439 - 0.00000036 * d) * DEG;
+  const ra = Math.atan2(Math.cos(e) * Math.sin(L), Math.cos(L)), dec = Math.asin(Math.sin(e) * Math.sin(L));
+  const gmst = ((18.697374558 + 24.06570982441908 * d) % 24 + 24) % 24;
+  const H = gmst * 15 * DEG + lon * DEG - ra, φ = lat * DEG;
+  const el = Math.asin(Math.sin(φ) * Math.sin(dec) + Math.cos(φ) * Math.cos(dec) * Math.cos(H));
+  const az = Math.atan2(-Math.sin(H), Math.tan(dec) * Math.cos(φ) - Math.sin(φ) * Math.cos(H));
+  return { el, az };
+}
+const START_NM = 118;
+const voy = {
+  nm: START_NM, warp: 60, linked: true, manualHour: 16.5,
+  date: 0, depart: 0, arrived: false, lastLeg: -1, celebrated: false,
+};
+function resetVoyage(nm = START_NM) {
+  voy.nm = nm; voy.arrived = false; voy.celebrated = false; voy.lastLeg = -1;
+  const p = voyagePos(nm);
+  // local apparent time 16:30 at the start position, 12 Oct 2026
+  voy.date = Date.UTC(2026, 9, 12, 0, 0) + (16.5 - p.lon / 15) * 3600e3;
+  voy.depart = voy.date - (nm / 19.5) * 3600e3;
+}
+resetVoyage();
+
+/* ═══════════════ ship dynamics state ═══════════════ */
+const ORDERS = [
+  { k: '전속 후진', rpm: -62 }, { k: '반속 후진', rpm: -48 }, { k: '미속 후진', rpm: -36 }, { k: '극미속 후진', rpm: -24 },
+  { k: '정지', rpm: 0 }, { k: '극미속 전진', rpm: 24 }, { k: '미속 전진', rpm: 38 }, { k: '반속 전진', rpm: 52 },
+  { k: '전속 전진', rpm: 64 }, { k: '항해 전속', rpm: 78 },
+];
+const st = {
+  order: 9, rpm: 78, U: 78 * 0.27 * KN, heading: 0, rudderCmd: 0, rudder: 0, r: 0,
+  roll: 0, rollV: 0, pitch: 0, heave: 0, ap: 'track', setHdg: 0, travel: 0,
+};
+{ const p = voyagePos(voy.nm); st.heading = p.brg; st.setHdg = p.brg; }
+
+/* ═══════════════ camera rig ═══════════════ */
+const cam = { mode: 'intro', blend: 1, from: { p: new THREE.Vector3(), q: new THREE.Quaternion() }, yaw: 0, pitch: 0, droneT: 0 };
+const _v = new THREE.Vector3(), _v2 = new THREE.Vector3(), _q = new THREE.Quaternion(), _m = new THREE.Matrix4(), _e = new THREE.Euler();
+const fwdOf = h => _v2.set(Math.sin(h), 0, -Math.cos(h));
+function setCamera(mode, instant = false) {
+  if (mode === cam.mode && !instant) return;
+  cam.from.p.copy(camera.position); cam.from.q.copy(camera.quaternion);
+  cam.mode = mode; cam.blend = instant || reduceMotion ? 1 : 0; cam.yaw = 0; cam.pitch = mode === 'bow' ? -0.12 : -0.04;
+  controls.enabled = false;
+  if (mode === 'orbit') {
+    const h = st.heading, f = fwdOf(h).clone(), s = new THREE.Vector3(-f.z, 0, f.x);
+    controls.target.set(ship.position.x, 22, ship.position.z);
+    cam.orbitGoal = new THREE.Vector3().copy(ship.position).addScaledVector(f, 360).addScaledVector(s, 430).setY(150);
+    if (cam.blend >= 1) { camera.position.copy(cam.orbitGoal); controls.enabled = true; controls.update(); }
+  }
+  document.querySelectorAll('#cams button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.cam === mode)));
+  camera.fov = mode === 'bridge' ? 62 : mode === 'bow' ? 58 : 48; camera.updateProjectionMatrix();
+}
+function cameraGoal(dt, out) {
+  const h = st.heading, f = fwdOf(h).clone(), s = new THREE.Vector3(-f.z, 0, f.x), sp = ship.position;
+  const lookFromLocal = (lp, yaw, pitch) => {
+    out.p.copy(lp); hullRoot.localToWorld(out.p);
+    hullRoot.getWorldQuaternion(_q);
+    _e.set(0, -Math.PI / 2 + yaw, pitch, 'YXZ');
+    // local +x is forward; camera looks down its -z
+    const lq = new THREE.Quaternion().setFromEuler(new THREE.Euler(pitch, -Math.PI / 2 + yaw, 0, 'YXZ'));
+    out.q.copy(_q).multiply(lq);
+  };
+  switch (cam.mode) {
+    case 'orbit': {
+      out.p.copy(cam.blend < 1 ? cam.orbitGoal : camera.position);
+      _m.lookAt(out.p, controls.target, camera.up); out.q.setFromRotationMatrix(_m); break;
+    }
+    case 'bridge': lookFromLocal(_v.set(XB + 6, SH.D + 27.6, 0), cam.yaw, cam.pitch); break;
+    case 'bow': lookFromLocal(_v.set(SH.L / 2 + 5, SH.D + 9, 0), cam.yaw, cam.pitch); break;
+    case 'chase': {
+      out.p.copy(sp).addScaledVector(f, -520).addScaledVector(s, 90).setY(95);
+      const t = _v.copy(sp).addScaledVector(f, -40).setY(-25);
+      _m.lookAt(out.p, t, camera.up); out.q.setFromRotationMatrix(_m); break;
+    }
+    case 'drone': {
+      cam.droneT += dt * (reduceMotion ? 0 : 0.035);
+      const a = cam.droneT, R = 980;
+      out.p.set(sp.x + Math.cos(a) * R, 520 + Math.sin(a * 2.3) * 120, sp.z + Math.sin(a) * R);
+      _m.lookAt(out.p, _v.copy(sp).setY(10), camera.up); out.q.setFromRotationMatrix(_m); break;
+    }
+    case 'wave': {
+      const px = sp.x + s.x * 240 + f.x * 120, pz = sp.z + s.z * 240 + f.z * 120;
+      out.p.set(px, waveHeight(px, pz) + 4.5, pz);
+      _m.lookAt(out.p, _v.copy(sp).addScaledVector(f, 30).setY(18), camera.up); out.q.setFromRotationMatrix(_m); break;
+    }
+  }
+}
+const goal = { p: new THREE.Vector3(), q: new THREE.Quaternion() };
+let drag = null;
+canvas.addEventListener('pointerdown', e => { if (cam.mode === 'bridge' || cam.mode === 'bow') { drag = { x: e.clientX, y: e.clientY, yaw: cam.yaw, pitch: cam.pitch }; canvas.setPointerCapture(e.pointerId); } });
+canvas.addEventListener('pointermove', e => { if (!drag) return; cam.yaw = drag.yaw - (e.clientX - drag.x) * 0.004; cam.pitch = clamp(drag.pitch - (e.clientY - drag.y) * 0.003, -0.6, 0.4); });
+canvas.addEventListener('pointerup', () => { drag = null; });
+
+/* ═══════════════ UI wiring ═══════════════ */
+const ui = {};
+['v-hdg', 'v-sog', 'v-rot', 'v-rpm', 'v-roll', 'v-pitch', 'v-wind', 'v-sea', 'v-pos', 'v-area', 'v-rudtxt', 'rud-fill', 'rud-cmd', 'lt', 'utc', 'g-next', 's-run', 's-left', 's-elapsed', 's-eta', 'track-done', 'track-me', 'tel-txt', 'helm-txt', 'ap-set', 'bft-txt', 'tod-txt', 'targets']
+  .forEach(id => ui[id] = $(id));
+const track = $('track');
+PORTS.forEach((p, i) => {
+  const d = document.createElement('div'); d.className = 'port'; d.style.left = (p.cum / totalNm * 100) + '%'; d.textContent = p.n; d.dataset.cum = p.cum;
+  if (i === PORTS.length - 1) d.classList.add('last');
+  track.insertBefore(d, ui['track-me']);
+});
+const telegraph = $('telegraph'), helm = $('helm'), bft = $('bft'), tod = $('tod');
+telegraph.addEventListener('input', () => { st.order = +telegraph.value; });
+helm.addEventListener('input', () => { setAp('manual'); st.rudderCmd = +helm.value * DEG; });
+helm.addEventListener('dblclick', () => { helm.value = 0; st.rudderCmd = 0; });
+function setAp(mode) {
+  st.ap = mode;
+  if (mode === 'hold') st.setHdg = Math.round(deg360(st.heading)) * DEG;
+  if (mode !== 'manual') { helm.value = 0; }
+  document.querySelectorAll('[data-ap]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.ap === mode)));
+}
+document.querySelectorAll('[data-ap]').forEach(b => b.addEventListener('click', () => setAp(b.dataset.ap)));
+$('ap-minus').addEventListener('click', () => { if (st.ap !== 'hold') setAp('hold'); st.setHdg -= 10 * DEG; });
+$('ap-plus').addEventListener('click', () => { if (st.ap !== 'hold') setAp('hold'); st.setHdg += 10 * DEG; });
+bft.addEventListener('input', () => { env.bft = +bft.value; waveTargets(); envDirty = true; });
+tod.addEventListener('input', () => { voy.linked = false; voy.manualHour = +tod.value; $('tod-link').setAttribute('aria-pressed', 'false'); envDirty = true; });
+$('tod-link').addEventListener('click', () => { voy.linked = true; $('tod-link').setAttribute('aria-pressed', 'true'); envDirty = true; });
+$('warp').addEventListener('change', e => { voy.warp = +e.target.value; });
+$('skip').addEventListener('click', () => {
+  const next = PORTS.find(p => p.cum > voy.nm + 1);
+  if (next) { voy.date += ((next.cum - 25 - voy.nm) / 19.5) * 3600e3; voy.nm = Math.max(voy.nm, next.cum - 25); envDirty = true; }
+});
+$('restart').addEventListener('click', () => { $('arrival').hidden = true; resetVoyage(); st.order = 9; telegraph.value = 9; setAp('track'); envDirty = true; });
+document.querySelectorAll('#cams button').forEach(b => b.addEventListener('click', () => setCamera(b.dataset.cam)));
+const app = $('app');
+function toggleHud() { const on = !app.classList.toggle('hud-hidden'); $('hud-btn').setAttribute('aria-pressed', String(!on)); }
+$('hud-btn').addEventListener('click', toggleHud);
+$('hud-btn').closest('.dock').classList.add('keep');
+let showLabels = false;
+function toggleLabels() { showLabels = !showLabels; $('labels').hidden = !showLabels; $('lbl-btn').setAttribute('aria-pressed', String(showLabels)); }
+$('lbl-btn').addEventListener('click', toggleLabels);
+let radarRange = 6;
+document.querySelectorAll('[data-range]').forEach(b => b.addEventListener('click', () => {
+  radarRange = +b.dataset.range;
+  document.querySelectorAll('[data-range]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+}));
+addEventListener('keydown', e => {
+  if (e.target.closest && e.target.closest('input, select')) return;
+  const k = e.key.toLowerCase();
+  const modes = ['orbit', 'bridge', 'chase', 'bow', 'drone', 'wave'];
+  if (k === 'c') setCamera(modes[(modes.indexOf(cam.mode) + 1) % modes.length]);
+  else if (k >= '1' && k <= '6') setCamera(modes[+k - 1]);
+  else if (k === 'h') toggleHud();
+  else if (k === 'l') toggleLabels();
+  else if (k === 'w') { st.order = Math.min(9, st.order + 1); telegraph.value = st.order; }
+  else if (k === 's') { st.order = Math.max(0, st.order - 1); telegraph.value = st.order; }
+  else if (k === 'a' || k === 'd') { setAp('manual'); st.rudderCmd = clamp(st.rudderCmd + (k === 'a' ? -5 : 5) * DEG, -35 * DEG, 35 * DEG); helm.value = Math.round(st.rudderCmd / DEG); }
+  else if (k === ' ') { st.rudderCmd = 0; helm.value = 0; e.preventDefault(); }
+});
+
+const SYS = [
+  ['nav', '항해 계통', 'ECDIS · 레이더 · AIS · BNWAS'],
+  ['comms', '외부 통신', 'VSAT · GMDSS — 비신뢰 네트워크 경계'],
+  ['propulsion', '추진', '주기관 원격제어 · 안전장치'],
+  ['power', '발전·배전', 'PMS · 배전반 제어'],
+  ['steering', '조타', '조타기 · 자동조타 장치'],
+  ['mooring', '계류·투묘', '윈드라스 · 계선 윈치 제어'],
+  ['cargo', '적부·밸러스트', '적부 컴퓨터 · 밸러스트 제어'],
+  ['fire', '화재 탐지', '화재 탐지·경보 패널'],
+];
+const sysEls = SYS.map(([key, t, d]) => {
+  const el = document.createElement('div'); el.className = 'sys';
+  const card = document.createElement('div'); card.className = 'card';
+  const b = document.createElement('b'); b.textContent = t; const s = document.createElement('span'); s.textContent = d;
+  card.append(b, s); el.append(card, Object.assign(document.createElement('div'), { className: 'stem' }), Object.assign(document.createElement('div'), { className: 'dot' }));
+  $('labels').append(el); return { key, el };
+});
+
+let toastTimer;
+function toast(eyebrow, text) {
+  const t = $('toast'); t.textContent = '';
+  const e = document.createElement('span'); e.className = 'eyebrow'; e.textContent = eyebrow;
+  t.append(e, document.createTextNode(text)); t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 4200);
+}
+
+/* ═══════════════ globe (cobe) & confetti — optional, fail soft ═══════════════ */
+let globe = null, globeState = { phi: 0, theta: 0.3 }, globeLeg = -2;
+async function initGlobe() {
+  try {
+    const { default: createGlobe } = await import('./vendor/cobe@2.0.1/index.esm.js');
+    const c = $('globe'), box = c.parentElement, size = Math.max(120, box.clientWidth);
+    const dpr = Math.min(devicePixelRatio, 2);
+    globe = createGlobe(c, {
+      devicePixelRatio: dpr, width: size, height: size, phi: 0, theta: 0.3, dark: 1, diffuse: 1.25,
+      mapSamples: 16000, mapBrightness: 5.5, mapBaseBrightness: 0.04,
+      baseColor: [0.16, 0.26, 0.3], markerColor: [1, 0.7, 0.28], glowColor: [0.1, 0.22, 0.26],
+      markers: [], arcs: [], arcColor: [0.35, 0.55, 0.6], arcWidth: 0.6, arcHeight: 0.04, markerElevation: 0.01, scale: 1,
+    });
+    c.style.width = c.style.height = '100%';
+  } catch (e) { $('globe-fb').hidden = false; }
+}
+function updateGlobe(p, force) {
+  if (!globe) return;
+  const tPhi = Math.PI - (p.lon * DEG - Math.PI / 2), tTheta = clamp(p.lat * DEG, -0.9, 0.9) * 0.9 + 0.12;
+  if (force) { globeState.phi = tPhi; globeState.theta = tTheta; }
+  globeState.phi += wrapPi(tPhi - globeState.phi) * 0.08; globeState.theta += (tTheta - globeState.theta) * 0.08;
+  const upd = { phi: globeState.phi, theta: globeState.theta };
+  if (force || p.leg !== globeLeg) {
+    globeLeg = p.leg;
+    upd.arcs = legs.map(l => ({ from: [ROUTE[l.i].lat, ROUTE[l.i].lon], to: [ROUTE[l.i + 1].lat, ROUTE[l.i + 1].lon], color: l.i < p.leg ? [1, 0.7, 0.28] : [0.32, 0.5, 0.55] }));
+  }
+  if (force || (globeState.tick = (globeState.tick || 0) + 1) % 15 === 0) {
+    upd.markers = [...PORTS.map(q => ({ location: [q.lat, q.lon], size: 0.035, color: q.cum <= voy.nm ? [1, 0.7, 0.28] : [0.55, 0.7, 0.74] })),
+      { location: [p.lat, p.lon], size: 0.07, color: [1, 1, 1] }];
+  }
+  globe.update(upd);
+}
+let confettiFire = null;
+async function celebrate() {
+  if (reduceMotion) return;
+  try {
+    if (!confettiFire) {
+      const mod = await import('./vendor/canvas-confetti@1.9.4/confetti.module.mjs');
+      confettiFire = mod.create($('confetti'), { resize: true, useWorker: false, disableForReducedMotion: true });
+    }
+    const colors = ['#ffb347', '#e3edef', '#3ddc84', '#ff5b4f', '#2d5b87'];
+    confettiFire({ particleCount: 140, spread: 75, origin: { x: 0.2, y: 0.7 }, angle: 60, colors });
+    confettiFire({ particleCount: 140, spread: 75, origin: { x: 0.8, y: 0.7 }, angle: 120, colors });
+    setTimeout(() => confettiFire({ particleCount: 90, spread: 120, startVelocity: 35, origin: { x: 0.5, y: 0.45 }, colors, shapes: ['square'] }), 450);
+  } catch (e) { /* effect skipped; arrival card still shows */ }
+}
+
+/* ═══════════════ HUD canvases ═══════════════ */
+const tapeC = $('tape'), radarC = $('radar');
+function fitCanvas(c) { const r = c.getBoundingClientRect(), d = Math.min(devicePixelRatio, 2); const w = Math.max(1, Math.round(r.width * d)), h = Math.max(1, Math.round(r.height * d)); if (c.width !== w || c.height !== h) { c.width = w; c.height = h; } return d; }
+const css = getComputedStyle(document.documentElement);
+const C = { amber: css.getPropertyValue('--amber').trim() || '#ffb347', fg: css.getPropertyValue('--fg').trim() || '#e3edef', muted: css.getPropertyValue('--muted').trim() || '#8ba3aa', port: css.getPropertyValue('--port').trim(), stbd: css.getPropertyValue('--stbd').trim(), caution: css.getPropertyValue('--caution').trim() };
+function drawTape() {
+  const d = fitCanvas(tapeC), g = tapeC.getContext('2d'), w = tapeC.width, h = tapeC.height;
+  g.clearRect(0, 0, w, h);
+  const hdg = deg360(st.heading), span = 70, ppd = w / span;
+  g.font = `600 ${12 * d}px "Barlow Condensed", sans-serif`; g.textAlign = 'center';
+  for (let a = Math.floor(hdg - span / 2); a <= hdg + span / 2; a++) {
+    const x = w / 2 + (a - hdg) * ppd, aa = ((a % 360) + 360) % 360;
+    if (aa % 5) continue;
+    const major = aa % 10 === 0;
+    g.fillStyle = major ? C.fg : C.muted; g.globalAlpha = 1 - Math.abs(x - w / 2) / (w / 2) * 0.75;
+    g.fillRect(x - d / 2, h - (major ? 12 : 7) * d, d, (major ? 12 : 7) * d);
+    if (major) { const lab = { 0: 'N', 90: 'E', 180: 'S', 270: 'W' }[aa] ?? String(aa).padStart(3, '0'); g.fillStyle = lab.length === 1 ? C.amber : C.fg; g.fillText(lab, x, h - 16 * d); }
+  }
+  g.globalAlpha = 1;
+  if (st.ap !== 'manual') { const set = deg360(st.ap === 'track' ? voyCache.brg : st.setHdg); let dx = wrapPi((set - hdg) * DEG) / DEG; dx = clamp(dx, -span / 2, span / 2); const x = w / 2 + dx * ppd; g.fillStyle = C.amber; g.fillRect(x - 3 * d, h - 4 * d, 6 * d, 4 * d); }
+  g.fillStyle = C.amber; g.beginPath(); g.moveTo(w / 2 - 6 * d, 0); g.lineTo(w / 2 + 6 * d, 0); g.lineTo(w / 2, 8 * d); g.fill();
+  g.font = `700 ${15 * d}px "Barlow Condensed", sans-serif`; g.fillStyle = C.fg; g.fillText(hdg.toFixed(1) + '°', w / 2, 21 * d);
+}
+const radarEcho = document.createElement('canvas');
+let sweep = 0;
+function drawRadar(dt) {
+  if (radarC.offsetParent === null) return;
+  const d = fitCanvas(radarC), w = radarC.width, R = w / 2 - 4 * d, g = radarC.getContext('2d');
+  if (radarEcho.width !== w) { radarEcho.width = radarEcho.height = w; }
+  const e = radarEcho.getContext('2d');
+  e.globalCompositeOperation = 'destination-out'; e.fillStyle = `rgba(0,0,0,${Math.min(1, dt * 0.6)})`; e.fillRect(0, 0, w, w); e.globalCompositeOperation = 'source-over';
+  const prev = sweep; sweep = (sweep + dt * TAU / 2.5) % TAU;
+  const inSweep = a => { const x = ((a - prev) % TAU + TAU) % TAU, y = ((sweep - prev) % TAU + TAU) % TAU; return x <= y; };
+  const scale = R / (radarRange * NM);
+  e.fillStyle = 'rgba(255,190,90,0.9)';
+  for (const t of traffic) {
+    const dx = t.group.position.x - ship.position.x, dz = t.group.position.z - ship.position.z;
+    const brg = Math.atan2(dx, -dz);
+    if (Math.hypot(dx, dz) < radarRange * NM && inSweep(brg)) { const sz = clamp(t.P.L * scale * 0.5, 2.5 * d, 9 * d); e.beginPath(); e.ellipse(w / 2 + dx * scale, w / 2 + dz * scale, sz, sz * 0.7, 0, 0, TAU); e.fill(); }
+  }
+  const clutter = 0.4 + env.bft * 0.12;
+  for (let i = 0; i < 6 + env.bft * 6; i++) { const a = prev + Math.random() * ((sweep - prev + TAU) % TAU), rr = Math.random() ** 2 * clutter * NM * scale; e.fillStyle = 'rgba(255,190,90,.35)'; e.fillRect(w / 2 + Math.sin(a) * rr, w / 2 - Math.cos(a) * rr, d * 1.4, d * 1.4); }
+  g.clearRect(0, 0, w, w);
+  g.save(); g.beginPath(); g.arc(w / 2, w / 2, R, 0, TAU); g.clip();
+  g.fillStyle = 'rgba(4,12,14,.9)'; g.fillRect(0, 0, w, w);
+  const sw = g.createConicGradient ? g.createConicGradient(sweep - Math.PI / 2 - 0.6, w / 2, w / 2) : null;
+  if (sw) { sw.addColorStop(0, 'rgba(255,179,71,0)'); sw.addColorStop(0.095, 'rgba(255,179,71,.16)'); sw.addColorStop(0.1, 'rgba(255,179,71,0)'); g.fillStyle = sw; g.fillRect(0, 0, w, w); }
+  g.drawImage(radarEcho, 0, 0);
+  g.strokeStyle = 'rgba(150,200,210,.22)'; g.lineWidth = d;
+  for (let i = 1; i <= 3; i++) { g.beginPath(); g.arc(w / 2, w / 2, R * i / 3, 0, TAU); g.stroke(); }
+  for (let a = 0; a < 360; a += 30) { const r = a * DEG; g.beginPath(); g.moveTo(w / 2 + Math.sin(r) * R * 0.94, w / 2 - Math.cos(r) * R * 0.94); g.lineTo(w / 2 + Math.sin(r) * R, w / 2 - Math.cos(r) * R); g.stroke(); }
+  const hx = Math.sin(st.heading), hz = -Math.cos(st.heading);
+  g.strokeStyle = C.fg; g.globalAlpha = 0.8; g.beginPath(); g.moveTo(w / 2, w / 2); g.lineTo(w / 2 + hx * R, w / 2 + hz * R); g.stroke(); g.globalAlpha = 1;
+  const vecT = 360;  // 6-min true vectors
+  g.strokeStyle = C.amber; g.beginPath(); g.moveTo(w / 2, w / 2); g.lineTo(w / 2 + hx * st.U * vecT * scale, w / 2 + hz * st.U * vecT * scale); g.stroke();
+  g.font = `600 ${10 * d}px "Barlow Condensed", sans-serif`;
+  for (const t of traffic) {
+    const dx = t.group.position.x - ship.position.x, dz = t.group.position.z - ship.position.z;
+    if (Math.hypot(dx, dz) > radarRange * NM) continue;
+    const x = w / 2 + dx * scale, y = w / 2 + dz * scale, col = t.risk === 'alarm' ? C.port : t.risk === 'warn' ? C.caution : C.stbd;
+    g.strokeStyle = col; g.strokeRect(x - 4 * d, y - 4 * d, 8 * d, 8 * d);
+    g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.sin(t.course) * t.U * vecT * scale, y - Math.cos(t.course) * t.U * vecT * scale); g.stroke();
+  }
+  g.restore();
+  g.fillStyle = C.muted; g.textAlign = 'left'; g.fillText(`${radarRange} NM · 링 ${(radarRange / 3)} NM`, 6 * d, w - 6 * d);
+}
+
+/* ═══════════════ formatting ═══════════════ */
+const fmtLat = v => { const a = Math.abs(v), d = Math.floor(a), m = (a - d) * 60; return `${String(d).padStart(2, '0')}°${m.toFixed(1).padStart(4, '0')}′${v >= 0 ? 'N' : 'S'}`; };
+const fmtLon = v => { const a = Math.abs(v), d = Math.floor(a), m = (a - d) * 60; return `${String(d).padStart(3, '0')}°${m.toFixed(1).padStart(4, '0')}′${v >= 0 ? 'E' : 'W'}`; };
+const pad = n => String(n).padStart(2, '0');
+const fmtDate = ms => { const t = new Date(ms); return `${t.getUTCMonth() + 1}/${t.getUTCDate()} ${pad(t.getUTCHours())}:${pad(t.getUTCMinutes())}Z`; };
+const compass8 = r => ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][Math.round(deg360(r) / 45) % 8];
+const nmFmt = v => Math.round(v).toLocaleString('en-US') + ' nm';
+
+/* ═══════════════ environment update (sun, sky, fog) ═══════════════ */
+let envDirty = true, envTimer = 0, skyInfo = { el: 0.3, day: 1 };
+let voyCache = voyagePos(voy.nm);
+const sunDir = new THREE.Vector3(), moonDir = new THREE.Vector3();
+function applyEnvironment() {
+  const p = voyCache;
+  let date = voy.date;
+  if (!voy.linked) { const day = Math.floor(voy.date / 86400e3) * 86400e3; date = day + (voy.manualHour - p.lon / 15) * 3600e3; }
+  const { el, az } = sunPosition(date, p.lat, p.lon);
+  // scene north is −z; ship heading is not a factor: the sky is fixed to the earth
+  sunDir.set(Math.sin(az) * Math.cos(el), Math.sin(el), -Math.cos(az) * Math.cos(el));
+  const elD = el / DEG, day = smooth(-6, 6, elD), night = 1 - day;
+  skyInfo = { el: elD, day };
+  const b = env.bft, cover = clamp(0.12 + b * 0.075, 0, 0.88);
+  skyU.sunPosition.value.copy(sunDir);
+  skyU.turbidity.value = 3 + b * 0.55; skyU.rayleigh.value = lerp(1.6, 0.7, b / 10);
+  skyU.cloudCoverage.value = cover; skyU.cloudDensity.value = 0.3 + b * 0.05; skyU.cloudSpeed.value = 0.00002 + WIND_MS[b] * 0.000002;
+  moonDir.set(-sunDir.x, Math.max(0.25, -sunDir.y * 0.8 + 0.2), -sunDir.z).normalize();
+  const warm = smooth(2, 22, elD);
+  const sunCol = new THREE.Color().setRGB(1, lerp(0.62, 0.96, warm), lerp(0.38, 0.9, warm));
+  const overcast = 1 - cover * 0.6;
+  sun.color.copy(sunCol); sun.intensity = 3.2 * smooth(-1.5, 8, elD) * overcast;
+  moonLight.intensity = 1.1 * night * (1 - cover * 0.6); hemi.intensity = 0.06 + 0.5 * day * overcast + 0.75 * night;
+  oceanUniforms.uAmb.value.setRGB(0.012, 0.02, 0.042).multiplyScalar(night);
+  hemi.color.setRGB(lerp(0.32, 0.74, day), lerp(0.4, 0.83, day), lerp(0.62, 0.88, day));
+  scene.environmentIntensity = 0.15 + 0.85 * day;
+  renderer.toneMappingExposure = lerp(1.35, 0.48, day) * lerp(1, 1.15, b / 10);
+  const lightLvl = 0.035 + day * overcast * 0.95 + night * 0.14;
+  oceanUniforms.uLight.value = lightLvl;
+  const useMoon = elD < -2;
+  oceanUniforms.uSunDir.value.copy(useMoon ? moonDir : sunDir);
+  oceanUniforms.uSunColor.value.copy(useMoon ? new THREE.Color(0.6, 0.7, 1) : sunCol);
+  oceanUniforms.uSunI.value = useMoon ? 0.4 * (1 - cover * 0.8) : smooth(-2, 4, elD) * (1 - cover * 0.75);
+  oceanUniforms.uFog.value = 0.000055 + b * 0.000012;
+  oceanUniforms.uFoam.value = clamp((b - 2.5) / 5, 0, 1.1);
+  scene.fog.density = oceanUniforms.uFog.value * 1.15;
+  scene.fog.color.setRGB(lerp(0.02, 0.52, day), lerp(0.035, 0.6, day), lerp(0.06, 0.66, day));
+  stars.material.opacity = night * (1 - cover * 0.9);
+  moon.material.opacity = night * (1 - cover * 0.5);
+  accMaterials.forEach((m, i) => m.emissiveIntensity = night * (i === 2 ? 0.6 : 1.4));
+  floods.forEach(l => l.intensity = night * 9000);
+  const rainAmt = clamp((b - 6) / 4, 0, 1);
+  rain.m.visible = rainAmt > 0; rain.m.material.opacity = rainAmt * 0.35;
+  const hour = ((date / 3600e3 + p.lon / 15) % 24 + 24) % 24;
+  if (voy.linked) tod.value = hour.toFixed(2);
+  ui['tod-txt'].textContent = `${pad(Math.floor(hour))}:${pad(Math.floor((hour % 1) * 60))}${voy.linked ? ' · 연동' : ''}`;
+  captureEnvironment();
+}
+
+/* ═══════════════ traffic logic ═══════════════ */
+function spawnTarget(t, initial) {
+  const own = ship.position, h = st.heading;
+  let brgRel, rng0, course, U;
+  if (initial && t.kind === 'tanker') { brgRel = 48 * DEG; rng0 = 4.1; course = h - 96 * DEG; U = 13 * KN; }
+  else if (initial && t.kind === 'fish') { brgRel = -14 * DEG; rng0 = 2.4; course = h + 172 * DEG; U = 4 * KN; }
+  else if (initial && t.kind === 'box') { brgRel = 172 * DEG; rng0 = 2.8; course = h + 3 * DEG; U = 23.5 * KN; }
+  else {
+    brgRel = (Math.random() * 140 - 70) * DEG; rng0 = 6.3 + Math.random() * 1.2;
+    U = (t.kind === 'fish' ? 4 + Math.random() * 3 : 11 + Math.random() * 8) * KN;
+  }
+  const brg = h + brgRel;
+  t.group.position.set(own.x + Math.sin(brg) * rng0 * NM, 0, own.z - Math.cos(brg) * rng0 * NM);
+  if (course === undefined) {
+    const fx = own.x + Math.sin(h) * st.U * 1100, fz = own.z - Math.cos(h) * st.U * 1100;
+    const off = (Math.random() * 2 - 1) * 2200;
+    const ax = fx + Math.cos(h) * off, az = fz + Math.sin(h) * off;
+    course = Math.atan2(ax - t.group.position.x, -(az - t.group.position.z));
+  }
+  t.course = course; t.U = U; t.heave = 0; t.pitch = 0; t.roll = 0;
+}
+function assess(t) {
+  const rx = t.group.position.x - ship.position.x, rz = t.group.position.z - ship.position.z;
+  const vox = Math.sin(st.heading) * st.U, voz = -Math.cos(st.heading) * st.U;
+  const vtx = Math.sin(t.course) * t.U, vtz = -Math.cos(t.course) * t.U;
+  const vx = vtx - vox, vz = vtz - voz, v2 = vx * vx + vz * vz;
+  const range = Math.hypot(rx, rz);
+  let tcpa = v2 > 1e-6 ? -(rx * vx + rz * vz) / v2 : 0;
+  const cpa = tcpa > 0 ? Math.hypot(rx + vx * tcpa, rz + vz * tcpa) : range;
+  const brgT = Math.atan2(rx, -rz), rel = deg360(brgT - st.heading);
+  const aspect = deg360(t.course - st.heading);
+  let sit = '';
+  if ((rel < 8 || rel > 352) && aspect > 165 && aspect < 195) sit = '마주침 · 제14조';
+  else if (rel > 112.5 && rel < 247.5) sit = '추월 상황 · 제13조';
+  else if (rel <= 112.5) sit = '횡단 · 본선 피항선';
+  else sit = '횡단 · 본선 유지선';
+  const danger = tcpa > 0 && tcpa < 1800 && cpa < 1.0 * NM;
+  t.risk = danger && cpa < 0.5 * NM ? 'alarm' : danger ? 'warn' : 'ok';
+  Object.assign(t, { range, tcpa, cpa, rel, sit, brgT });
+}
+
+/* ═══════════════ main loop ═══════════════ */
+let wake, smoke, spray, F;
+const clock = new THREE.Timer();
+let t = 0, hudT = 0, radarT = 0, labelV = new THREE.Vector3();
+const bowW = new THREE.Vector3(), tmp = new THREE.Vector3();
+let lastWakeTravel = -10, lastShip = new THREE.Vector3();
+let prevBowImm = 0;
+
+function shiftOrigin() {
+  const dx = Math.round(ship.position.x / 100) * 100, dz = Math.round(ship.position.z / 100) * 100;
+  if (Math.hypot(dx, dz) < 1500) return;
+  origin.x += dx; origin.z += dz;
+  ship.position.x -= dx; ship.position.z -= dz;
+  for (const tr of traffic) { tr.group.position.x -= dx; tr.group.position.z -= dz; }
+  camera.position.x -= dx; camera.position.z -= dz; controls.target.x -= dx; controls.target.z -= dz;
+  cam.from.p.x -= dx; cam.from.p.z -= dz; if (cam.orbitGoal) { cam.orbitGoal.x -= dx; cam.orbitGoal.z -= dz; }
+  lastShip.x -= dx; lastShip.z -= dz;
+  wake.shift(dx, dz); smoke.shift(dx, dz); spray.shift(dx, dz);
+}
+
+function step(now) {
+  clock.update(now);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  t += dt;
+  oceanUniforms.uTime.value = t;
+  updateWaves(t, dt);
+  waves.forEach((w, i) => { waveU.a[i].set(w.dx, w.dz, w.k, w.A); waveU.b[i].set(w.Q, w.Phi, w.L, 0); });
+
+  /* engine & manoeuvring (first-order engine, Nomoto steering) */
+  const ord = ORDERS[st.order];
+  st.rpm += clamp(ord.rpm - st.rpm, -6 * dt, 6 * dt);
+  const bftLoss = 1 - 0.035 * Math.max(0, env.bft - 5);
+  let Ut = (st.rpm >= 0 ? st.rpm * 0.27 : st.rpm * 0.17) * KN * bftLoss;
+  Ut *= 1 - Math.min(0.3, Math.abs(st.rudder) / (35 * DEG) * 0.28);
+  st.U += (Ut - st.U) * dt / (Ut > st.U ? 38 : 65);
+  const route = voyCache;
+  if (st.ap !== 'manual') {
+    const set = st.ap === 'track' ? route.brg : st.setHdg;
+    const err = wrapPi(set - st.heading) / DEG;
+    st.rudderCmd = clamp(err * 1.6 - (st.r / DEG) * 42, -20, 20) * DEG;
+  }
+  st.rudder += clamp(st.rudderCmd - st.rudder, -2.4 * DEG * dt, 2.4 * DEG * dt);   // SOLAS: 35°→30° in ≤28 s
+  const Ua = Math.abs(st.U), K = 0.5 * Ua / SH.L * (st.U >= 0 ? 1 : -0.3), Tn = 2 * SH.L / Math.max(Ua, 0.6);
+  st.r += (K * st.rudder - st.r) * dt / Tn;
+  st.heading = (st.heading + st.r * dt + TAU) % TAU;
+  const f = fwdOf(st.heading);
+  ship.position.x += f.x * st.U * dt; ship.position.z += f.z * st.U * dt;
+  st.travel += Math.abs(st.U) * dt;
+  ship.rotation.y = Math.PI / 2 - st.heading;
+  shipX = ship.position.x; shipZ = ship.position.z;
+  oceanUniforms.uShip.value.set(shipX, shipZ);
+  ocean.position.set(Math.round(shipX / 50) * 50, 0, Math.round(shipZ / 50) * 50);
+
+  /* seakeeping: heave/pitch from hull-length wave sampling, roll as damped oscillator (T≈22 s) */
+  const s = { x: -f.z, z: f.x };
+  const hAt = (a, b) => waveHeight(shipX + f.x * a + s.x * b, shipZ + f.z * a + s.z * b);
+  const hb = hAt(SH.L * 0.42, 0), hs = hAt(-SH.L * 0.42, 0), hp = hAt(0, -SH.B * 0.46), hst = hAt(0, SH.B * 0.46), hc = hAt(0, 0);
+  const heaveT = (hc * 2 + hb + hs + hp + hst) / 6 * 0.85;
+  st.heave += (heaveT - st.heave) * Math.min(1, dt * 1.6);
+  st.pitch += (Math.atan2(hb - hs, SH.L * 0.84) * 0.9 - st.pitch) * Math.min(1, dt * 1.2);
+  const wn = TAU / 22, zeta = 0.07;
+  const rollEq = Math.atan2(hp - hst, SH.B * 0.92) * 1.6 - clamp(st.r * st.U * 25, -4, 4) * DEG;   // outward heel in a turn
+  st.rollV += (-2 * zeta * wn * st.rollV - wn * wn * (st.roll - rollEq)) * dt;
+  st.roll += st.rollV * dt;
+  pivot.position.y = st.heave;
+  pivot.rotation.set(st.roll, 0, st.pitch, 'ZXY');
+
+  /* voyage clock */
+  if (!voy.arrived) {
+    const dh = dt * voy.warp / 3600;
+    voy.nm += Math.max(0, st.U / KN) * dh;
+    voy.date += dt * voy.warp * 1000;
+    if (voy.nm >= totalNm) { voy.nm = totalNm; voy.arrived = true; arrive(); }
+  }
+  voyCache = voyagePos(voy.nm);
+  if (voyCache.leg !== voy.lastLeg) {
+    if (voy.lastLeg >= 0) {
+      const wp = ROUTE[voyCache.leg];
+      if (wp.n) toast(wp.port ? '기항지 통과' : '변침점 통과', `${wp.n} · 다음 해역 ${wp.area}`);
+      else toast('변침점 통과', `WP ${voyCache.leg} · ${wp.area} 진입 · 신침로 ${deg360(voyCache.brg).toFixed(0).padStart(3, '0')}°`);
+    }
+    voy.lastLeg = voyCache.leg;
+  }
+  envTimer += dt;
+  if (envDirty || envTimer > (voy.warp >= 600 ? 0.6 : 2.5)) { envDirty = false; envTimer = 0; applyEnvironment(); }
+  sky.position.copy(camera.position);
+  skyU.time.value = t;
+  stars.position.copy(camera.position);
+  moon.position.copy(camera.position).addScaledVector(moonDir, 18000);
+
+  /* shadows follow the ship */
+  sun.position.copy(ship.position).addScaledVector(sunDir.y > 0 ? sunDir : moonDir, 1500); sun.target.position.copy(ship.position);
+  moonLight.position.copy(ship.position).addScaledVector(moonDir, 1500); moonLight.target.position.copy(ship.position);
+
+  /* traffic */
+  for (const tr of traffic) {
+    tr.group.position.x += Math.sin(tr.course) * tr.U * dt; tr.group.position.z -= Math.cos(tr.course) * tr.U * dt;
+    tr.group.rotation.y = Math.PI / 2 - tr.course;
+    const gx = tr.group.position.x, gz = tr.group.position.z, fx = Math.sin(tr.course), fz = -Math.cos(tr.course), L = tr.P.L;
+    const a = waveHeight(gx + fx * L * 0.4, gz + fz * L * 0.4), b = waveHeight(gx - fx * L * 0.4, gz - fz * L * 0.4), c = waveHeight(gx - fz * tr.P.B * 0.45, gz + fx * tr.P.B * 0.45), d = waveHeight(gx + fz * tr.P.B * 0.45, gz - fx * tr.P.B * 0.45);
+    const k = Math.min(1, dt * (L < 100 ? 4 : 1.5));
+    tr.heave += ((a + b + c + d) / 4 - tr.heave) * k; tr.pitch += (Math.atan2(a - b, L * 0.8) - tr.pitch) * k; tr.roll += (Math.atan2(c - d, tr.P.B) * (L < 100 ? 2.2 : 1.2) - tr.roll) * k;
+    tr.pivot.position.y = tr.heave; tr.pivot.rotation.set(tr.roll, 0, tr.pitch, 'ZXY');
+    assess(tr);
+    if (tr.range > 9.5 * NM && tr.tcpa <= 0) spawnTarget(tr, false);
+  }
+
+  /* wake, bow foam, smoke, spray */
+  const sternX = shipX - f.x * (SH.L / 2 + 2), sternZ = shipZ - f.z * (SH.L / 2 + 2);
+  const bowX = shipX + f.x * (SH.L / 2 - 4), bowZ = shipZ + f.z * (SH.L / 2 - 4);
+  const kU = clamp(st.U / (14 * KN), 0, 1);
+  if (st.travel - lastWakeTravel > 4) { lastWakeTravel = st.travel; wake.push({ sx: sternX, sz: sternZ, bx: bowX, bz: bowZ, px: -f.z, pz: f.x, t, d: st.travel, k: kU }); }
+  wake.update(t, st.travel, sternX, sternZ, bowX, bowZ, st.heading);
+  bowFoam.material.uniforms.uAmt.value = clamp(st.U / (18 * KN), 0, 1);
+  hullRoot.localToWorld(tmp.copy(funnelTop));
+  const wind = WIND_MS[env.bft], wdir = env.windFrom + Math.PI, wx = Math.sin(wdir) * wind, wz = -Math.cos(wdir) * wind;
+  const rate = st.rpm > 1 ? 14 + st.rpm * 0.25 : 3;
+  for (let i = 0; i < rate * dt * 2; i++) smoke.spawn(tmp.x + (Math.random() - 0.5) * 4, tmp.y, tmp.z + (Math.random() - 0.5) * 4, wx * 0.8 + (Math.random() - 0.5), 4 + Math.random() * 2, wz * 0.8 + (Math.random() - 0.5), 7, 14 + Math.random() * 6, 3.2);
+  smoke.update(dt, -0.05, 0.05);
+  hullRoot.localToWorld(bowW.set(SH.L / 2 - 6, SH.T + 1, 0));
+  const imm = waveHeight(bowW.x, bowW.z) - bowW.y + 2.5;
+  if (imm > 0 && imm - prevBowImm > 0.02 && env.bft >= 3 && st.U > 3) {
+    const n = Math.min(40, (imm - prevBowImm) * 400 * (env.bft / 6));
+    for (let i = 0; i < n; i++) {
+      const side = Math.random() < 0.5 ? -1 : 1, sp = 6 + Math.random() * 10;
+      spray.spawn(bowW.x - f.x * Math.random() * 25 + s.x * side * 5, bowW.y + 1, bowW.z - f.z * Math.random() * 25 + s.z * side * 5,
+        s.x * side * sp * 0.6 + f.x * st.U * 0.7, 6 + Math.random() * 9, s.z * side * sp * 0.6 + f.z * st.U * 0.7, 3, 1.6 + Math.random(), 4.5);
+    }
+  }
+  prevBowImm = imm;
+  spray.update(dt, 9.81, 0.4);
+
+  /* rain falls around the camera */
+  if (rain.m.visible) {
+    const cp = camera.position, P = rain.pos, slant = 0.25;
+    for (let i = 0; i < rain.n; i++) {
+      const sd = rain.seeds[i]; sd[1] -= dt * 11; if (sd[1] < -10) sd[1] += 80;
+      const x = cp.x + sd[0] + wx * slant * (sd[1] / 10), y = cp.y + sd[1] - 30, z = cp.z + sd[2] + wz * slant * (sd[1] / 10);
+      P.set([x, y, z, x + wx * 0.05, y + 1.4, z + wz * 0.05], i * 6);
+    }
+    rain.m.geometry.attributes.position.needsUpdate = true;
+  }
+
+  /* radar scanners, ensign, birds */
+  spin.forEach(o => o.o.rotation.y += o.rate * dt);
+  {
+    const ax = wx - f.x * st.U, az = wz - f.z * st.U;            // apparent wind
+    const awLocal = Math.atan2(-(ax * s.x + az * s.z), ax * f.x + az * f.z);
+    flag.rotation.y = awLocal;
+    const aw = Math.hypot(ax, az), base = flagGeo.userData.base, P = flagGeo.attributes.position.array;
+    for (let i = 0; i < P.length; i += 3) { const x = base[i]; P[i + 2] = Math.sin(x * 1.7 - t * (4 + aw * 0.4) + base[i + 1] * 0.6) * x * 0.09 * clamp(aw / 8, 0.3, 1.4); }
+    flagGeo.attributes.position.needsUpdate = true; flagGeo.computeVertexNormals();
+  }
+  const birdsOn = skyInfo.day > 0.4 && env.bft < 7;
+  birds.forEach(b => {
+    const u = b.userData; b.visible = birdsOn; if (!birdsOn) return;
+    const a = u.ph + t * u.sp;
+    b.position.set(u.x0 + Math.cos(a) * u.rad, u.h + Math.sin(t * 0.7 + u.ph) * 4, Math.sin(a) * u.rad);
+    b.rotation.set(0, -a + (u.sp > 0 ? 0 : Math.PI), Math.sin(a) * 0.3 * Math.sign(u.sp));
+    const flap = Math.sin(t * 7 + u.ph) * 0.5 * (0.5 + 0.5 * Math.sin(t * 0.9 + u.ph));
+    u.L.rotation.x = flap; u.R.rotation.x = -flap;
+  });
+
+  /* nav light sectors (COLREG): masthead 225°, sidelights 112.5°, sternlight 135° */
+  const night = 1 - skyInfo.day;
+  for (const L of navLights) {
+    L.spr.getWorldPosition(tmp);
+    const dist = camera.position.distanceTo(tmp);
+    L.owner.getWorldQuaternion(_q);
+    const fwdW = _v.set(1, 0, 0).applyQuaternion(_q), stbW = new THREE.Vector3(0, 0, 1).applyQuaternion(_q);
+    const toC = new THREE.Vector3().subVectors(camera.position, tmp).setY(0).normalize();
+    const rel = Math.atan2(toC.dot(stbW), toC.dot(fwdW)) / DEG;
+    const ar = Math.abs(rel);
+    let vis = 1;
+    if (L.sector === 'mast') vis = 1 - smooth(110, 116, ar);
+    else if (L.sector === 'stern') vis = smooth(109, 115, ar);
+    else if (L.sector === 'stbd') vis = smooth(-3, 1, rel) * (1 - smooth(110, 116, rel));
+    else if (L.sector === 'port') vis = smooth(-3, 1, -rel) * (1 - smooth(110, 116, -rel));
+    const strength = vis * (0.2 + 0.8 * night);
+    L.spr.material.opacity = strength;
+    L.spr.scale.setScalar(clamp(dist * 0.014, 2, 90) * L.size * (0.6 + night * 0.6));
+    L.core.visible = vis > 0.05;
+  }
+
+  /* camera */
+  cameraGoal(dt, goal);
+  if (cam.mode === 'orbit') {
+    const dx = ship.position.x - lastShip.x, dz = ship.position.z - lastShip.z;
+    controls.target.x += dx; controls.target.z += dz;
+    if (cam.orbitGoal) { cam.orbitGoal.x += dx; cam.orbitGoal.z += dz; }
+    if (cam.blend >= 1) { camera.position.x += dx; camera.position.z += dz; controls.update(); }
+  }
+  if (cam.blend < 1) {
+    cam.blend = Math.min(1, cam.blend + dt / (cam.intro ? 3.2 : 1.6));
+    const k = easeInOut(cam.blend);
+    camera.position.lerpVectors(cam.from.p, goal.p, k);
+    camera.quaternion.slerpQuaternions(cam.from.q, goal.q, k);
+    if (cam.blend >= 1) { cam.intro = false; if (cam.mode === 'orbit') { camera.position.copy(goal.p); controls.enabled = true; controls.update(); } }
+  } else if (cam.mode === 'chase') {
+    camera.position.lerp(goal.p, Math.min(1, dt * 2)); camera.quaternion.slerp(goal.q, Math.min(1, dt * 3));
+  } else if (cam.mode !== 'orbit') { camera.position.copy(goal.p); camera.quaternion.copy(goal.q); }
+  const wh = waveHeight(camera.position.x, camera.position.z) + 2.5;
+  if (camera.position.y < wh) camera.position.y = wh;
+  lastShip.copy(ship.position);
+  shiftOrigin();
+
+  smoke.mat.uniforms.uScale.value = spray.mat.uniforms.uScale.value = renderer.domElement.height / (2 * Math.tan(camera.fov * DEG / 2));
+  renderer.render(scene, camera);
+
+  /* labels */
+  if (showLabels) {
+    const W = canvas.clientWidth, H = canvas.clientHeight;
+    for (const { key, el } of sysEls) {
+      labelV.copy(anchors[key]); hullRoot.localToWorld(labelV); labelV.project(camera);
+      const on = labelV.z < 1 && Math.abs(labelV.x) < 1.1 && Math.abs(labelV.y) < 1.1;
+      el.style.opacity = on ? 1 : 0;
+      if (on) el.style.transform = `translate(${(labelV.x * 0.5 + 0.5) * W}px, ${(-labelV.y * 0.5 + 0.5) * H}px) translate(-50%, -100%)`;
+    }
+  }
+
+  drawTape();
+  radarT += dt; if (radarT > 1 / 30) { drawRadar(radarT); radarT = 0; }
+  hudT += dt; if (hudT > 0.1) { hudT = 0; updateHud(); updateGlobe(voyCache); }
+  requestAnimationFrame(step);
+}
+
+function updateHud() {
+  const p = voyCache;
+  ui['v-hdg'].textContent = deg360(st.heading).toFixed(1).padStart(5, '0') + '°';
+  ui['v-sog'].innerHTML = '';
+  ui['v-sog'].append(document.createTextNode((st.U / KN).toFixed(1)), Object.assign(document.createElement('small'), { textContent: 'kn' }));
+  const rot = st.r / DEG * 60;
+  ui['v-rot'].textContent = `${rot >= 0 ? '▶' : '◀'} ${Math.abs(rot).toFixed(1)}°/min`;
+  ui['v-rpm'].textContent = `${st.rpm.toFixed(0)} rpm`;
+  ui['tel-txt'].textContent = `${ORDERS[st.order].k} · ${ORDERS[st.order].rpm} rpm`;
+  const rd = st.rudder / DEG, rc = st.rudderCmd / DEG;
+  ui['v-rudtxt'].textContent = `${Math.abs(rd).toFixed(1)}° ${rd > 0.2 ? '우현' : rd < -0.2 ? '좌현' : '중앙'} · 명령 ${Math.abs(rc).toFixed(0)}°`;
+  const fill = ui['rud-fill'];
+  fill.style.width = Math.abs(rd) / 35 * 50 + '%'; fill.style.left = rd >= 0 ? '50%' : (50 - Math.abs(rd) / 35 * 50) + '%';
+  fill.style.background = rd >= 0 ? C.stbd : C.port;
+  ui['rud-cmd'].style.left = `calc(${50 + rc / 35 * 50}% - 1px)`;
+  ui['helm-txt'].textContent = st.ap === 'manual' ? `${Math.abs(rc).toFixed(0)}° ${rc > 0 ? '우현' : rc < 0 ? '좌현' : '중앙'}` : '자동조타';
+  ui['ap-set'].textContent = st.ap === 'track' ? `항로 ${deg360(p.brg).toFixed(0).padStart(3, '0')}°` : st.ap === 'hold' ? `침로 ${deg360(st.setHdg).toFixed(0).padStart(3, '0')}°` : '수동';
+  const rl = st.roll / DEG;
+  ui['v-roll'].textContent = `${rl >= 0 ? 'S' : 'P'} ${Math.abs(rl).toFixed(1)}°`;
+  ui['v-pitch'].textContent = `${st.pitch >= 0 ? '▲' : '▼'} ${Math.abs(st.pitch / DEG).toFixed(1)}° · ${st.heave >= 0 ? '+' : ''}${st.heave.toFixed(1)} m`;
+  ui['v-wind'].textContent = `${compass8(env.windFrom)} ${WIND_MS[env.bft].toFixed(1)} m/s`;
+  ui['v-sea'].textContent = `${HS[env.bft].toFixed(1)} m · B${env.bft}`;
+  ui['bft-txt'].textContent = `보퍼트 ${env.bft} · 파고 ${HS[env.bft].toFixed(1)} m`;
+  ui['v-pos'].textContent = `${fmtLat(p.lat)}  ${fmtLon(p.lon)}`;
+  ui['v-area'].textContent = p.area;
+  const lt = ((voy.date / 3600e3 + p.lon / 15) % 24 + 24) % 24;
+  const zone = Math.round(p.lon / 15);
+  const ztime = new Date(voy.date + zone * 3600e3);
+  ui['lt'].textContent = voy.linked ? `${pad(ztime.getUTCHours())}:${pad(ztime.getUTCMinutes())} LT` : `${pad(Math.floor(voy.manualHour))}:${pad(Math.round((voy.manualHour % 1) * 60))} 수동`;
+  ui['utc'].textContent = `UTC ${pad(new Date(voy.date).getUTCHours())}:${pad(new Date(voy.date).getUTCMinutes())} · ZONE ${zone >= 0 ? '+' : ''}${zone} · 태양 ${skyInfo.el.toFixed(0)}°`;
+  ui['s-run'].textContent = nmFmt(voy.nm);
+  ui['s-left'].textContent = nmFmt(totalNm - voy.nm);
+  const el = voy.date - voy.depart, days = Math.floor(el / 86400e3), hrs = Math.floor((el % 86400e3) / 3600e3);
+  ui['s-elapsed'].textContent = `D+${days} ${pad(hrs)}h`;
+  const sog = st.U / KN;
+  ui['s-eta'].textContent = voy.arrived ? '입항' : sog > 1 ? fmtDate(voy.date + (totalNm - voy.nm) / sog * 3600e3) : '—';
+  const pct = voy.nm / totalNm * 100;
+  ui['track-done'].style.width = pct + '%'; ui['track-me'].style.left = pct + '%';
+  track.querySelectorAll('.port').forEach(el => el.classList.toggle('passed', +el.dataset.cum <= voy.nm + 0.01));
+  const next = ROUTE.slice(p.leg + 1).find(r => r.n) || ROUTE[ROUTE.length - 1];
+  ui['g-next'].textContent = `${next.n} ${nmFmt(next.cum - voy.nm)}`;
+  // ARPA list
+  const list = ui['targets'];
+  const sorted = [...traffic].sort((a, b) => a.range - b.range);
+  if (list.offsetParent !== null) {
+    list.textContent = '';
+    for (const tr of sorted) {
+      const li = document.createElement('li');
+      const n = document.createElement('span'); n.className = 'tn'; n.textContent = tr.name;
+      const pill = document.createElement('span'); pill.className = 'pill ' + tr.risk; pill.textContent = tr.risk === 'alarm' ? '충돌 위험' : tr.risk === 'warn' ? '주의' : '안전';
+      const ty = document.createElement('span'); ty.className = 'tt'; ty.textContent = `${tr.type} · ${tr.sit}`;
+      const v = document.createElement('span'); v.className = 'tv';
+      const tc = tr.tcpa > 0 ? `${(tr.tcpa / 60).toFixed(1)} min` : '멀어짐';
+      v.textContent = `BRG ${deg360(tr.brgT).toFixed(0).padStart(3, '0')}°  RNG ${(tr.range / NM).toFixed(2)}  CPA ${(tr.cpa / NM).toFixed(2)} nm  TCPA ${tc}`;
+      li.append(n, pill, ty, v); list.append(li);
+    }
+  }
+}
+
+function arrive() {
+  const el = voy.date - voy.depart, days = el / 86400e3;
+  $('arr-nm').textContent = nmFmt(totalNm);
+  $('arr-days').textContent = `${Math.floor(days)}일 ${Math.round((days % 1) * 24)}시간`;
+  $('arr-avg').textContent = `${(totalNm / (el / 3600e3)).toFixed(1)} kn`;
+  $('arrival').hidden = false;
+  st.order = 6; telegraph.value = 6;
+  if (!voy.celebrated) { voy.celebrated = true; celebrate(); }
+}
+
+/* ═══════════════ boot ═══════════════ */
+function resize() {
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  renderer.setSize(w, h, false); camera.aspect = w / Math.max(h, 1); camera.updateProjectionMatrix();
+}
+addEventListener('resize', resize);
+const dockEl = document.querySelector('.dock'), voyEl = document.querySelector('.voyage');
+new ResizeObserver(() => {
+  app.style.setProperty('--dock-h', dockEl.offsetHeight + 'px');
+  app.style.setProperty('--voy-h', voyEl.offsetHeight + 'px');
+}).observe(dockEl);
+
+(async () => {
+  await Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 1500))]);
+  F = buildShip();
+  buildBirds();
+  for (const tr of traffic) { Object.assign(tr, buildVessel(tr.kind)); scene.add(tr.group); }
+  wake = new Wake(small ? 160 : 230);
+  smoke = new Particles(small ? 500 : 900, 0x5d6266, 0.55);
+  spray = new Particles(small ? 400 : 700, 0xf4f8fa, 0.8);
+  resize();
+  st.heading = voyCache.brg;
+  ship.rotation.y = Math.PI / 2 - st.heading;
+  for (const tr of traffic) spawnTarget(tr, true);
+  applyEnvironment();
+  // opening shot: from high astern down to a quarter view
+  const f = fwdOf(st.heading);
+  camera.position.set(-f.x * 1600, 700, -f.z * 1600);
+  camera.lookAt(0, 0, 0);
+  const deep = location.hash.slice(1);
+  if (['bridge', 'chase', 'bow', 'drone', 'wave'].includes(deep)) setCamera(deep, true);
+  else { cam.intro = true; setCamera('orbit', reduceMotion); }
+  // warm the wake so the ship does not appear to start from rest
+  for (let i = 60; i > 0; i--) {
+    const d = i * 4, sx = -f.x * (SH.L / 2 + 2 + d), sz = -f.z * (SH.L / 2 + 2 + d), bx = f.x * (SH.L / 2 - 4) - f.x * d, bz = f.z * (SH.L / 2 - 4) - f.z * d;
+    wake.push({ sx, sz, bx, bz, px: -f.z, pz: f.x, t: -d / st.U, d: -d, k: 1 });
+  }
+  lastWakeTravel = 0;
+  initGlobe().then(() => updateGlobe(voyCache, true));
+  $('loading').classList.add('done');
+  requestAnimationFrame(step);
+})();
+</script>
+</body>
+</html>

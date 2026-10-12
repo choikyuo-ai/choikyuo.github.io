@@ -13,3 +13,7 @@ Three.js, drei, TWGL.js, Motion, Fabric.js, canvas-confetti, Rive, deck.gl, Cobe
 **반드시 `.claude/skills/web-graphics-libs/SKILL.md`의 보안 정책을 따른다** — 정확한 버전 고정, SRI 필수,
 CDN 허용목록(jsdelivr/unpkg/cdnjs), 지연 로딩, 오프라인에서도 본 기능 동작, 데이터 외부 전송 금지.
 새 외부 도메인·wasm·1 MB 이상 에셋·copyleft 라이선스는 구현 전에 사용자 확인.
+
+## 페이지
+- `index.html` — UR E27/E26 심사 도구 (외부 의존성 없음)
+- `ship3d.html` — 한바다호 3D 항해 시뮬레이션. three.js·cobe·canvas-confetti를 `vendor/`의 고정 사본으로 로드 (출처·해시: `vendor/README.md`). `#bridge`, `#chase`, `#bow`, `#drone`, `#wave`로 시작 카메라 지정 가능.
